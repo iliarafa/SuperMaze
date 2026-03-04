@@ -1,9 +1,13 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { MazeData, cellIndex, Direction } from '../game/maze';
 import { Colors } from '../game/colors';
+import { ClassicalAgentState, moveAgent } from '../game/classicalAgent';
+import { drawClassicalAgent } from '../game/agentRenderer';
+import { detectSwipeDirection, touchToCell } from '../game/touchInput';
 
 interface MazeRendererProps {
   maze: MazeData;
+  agentState?: ClassicalAgentState;
 }
 
 function computeLayout(maze: MazeData) {
@@ -20,11 +24,9 @@ function drawMazeToCanvas(
   cellSize: number,
   mazePixelSize: number
 ): void {
-  // Background
   ctx.fillStyle = Colors.background;
   ctx.fillRect(0, 0, mazePixelSize, mazePixelSize);
 
-  // Start and exit nodes
   const nodeInset = Math.floor(cellSize * 0.2);
   const nodeSize = cellSize - nodeInset * 2;
 
@@ -36,7 +38,6 @@ function drawMazeToCanvas(
   const [ex, ey] = maze.exit;
   ctx.fillRect(ex * cellSize + nodeInset, ey * cellSize + nodeInset, nodeSize, nodeSize);
 
-  // Walls
   ctx.strokeStyle = Colors.wall;
   ctx.lineWidth = 2;
   ctx.lineCap = 'square';
@@ -77,7 +78,6 @@ function drawMazeToCanvas(
     }
   }
 
-  // Outer border
   ctx.beginPath();
   ctx.moveTo(0, mazePixelSize);
   ctx.lineTo(mazePixelSize, mazePixelSize);
@@ -85,11 +85,18 @@ function drawMazeToCanvas(
   ctx.stroke();
 }
 
-export function MazeRenderer({ maze }: MazeRendererProps) {
+export function MazeRenderer({ maze, agentState }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
   const layoutRef = useRef<ReturnType<typeof computeLayout> | null>(null);
+  const mazeRef = useRef(maze);
+  const agentRef = useRef(agentState);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Keep refs in sync
+  agentRef.current = agentState;
+  mazeRef.current = maze;
 
   // Rebuild offscreen canvas when maze changes
   useEffect(() => {
@@ -106,13 +113,79 @@ export function MazeRenderer({ maze }: MazeRendererProps) {
     offscreenRef.current = offscreen;
   }, [maze]);
 
-  // Set up main canvas and rAF loop
+  // Touch handlers
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    const agent = agentRef.current;
+    const m = mazeRef.current;
+    const layout = layoutRef.current;
+    const canvas = canvasRef.current;
+    const start = touchStartRef.current;
+
+    if (!agent || !m || !layout || !canvas || !start) return;
+
+    const endX = touch.clientX;
+    const endY = touch.clientY;
+
+    // Try swipe first
+    const swipeDir = detectSwipeDirection(start.x, start.y, endX, endY);
+    if (swipeDir !== null) {
+      moveAgent(agent, m, swipeDir);
+      touchStartRef.current = null;
+      return;
+    }
+
+    // Fall back to tap: map to cell, check adjacency, move
+    const rect = canvas.getBoundingClientRect();
+    const tapX = endX - rect.left;
+    const tapY = endY - rect.top;
+    const cell = touchToCell(
+      tapX, tapY,
+      layout.cellSize,
+      0, 0,
+      m.width, m.height
+    );
+
+    if (cell) {
+      const [cx, cy] = cell;
+      const [ax, ay] = agent.position;
+      const dx = cx - ax;
+      const dy = cy - ay;
+
+      // Only allow adjacent cell taps (manhattan distance 1)
+      if (Math.abs(dx) + Math.abs(dy) === 1) {
+        let dir: number | null = null;
+        if (dx === 1) dir = Direction.E;
+        else if (dx === -1) dir = Direction.W;
+        else if (dy === 1) dir = Direction.S;
+        else if (dy === -1) dir = Direction.N;
+
+        if (dir !== null) {
+          moveAgent(agent, m, dir);
+        }
+      }
+    }
+
+    touchStartRef.current = null;
+  }, []);
+
+  // Set up canvas, touch events, and rAF loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     function frame() {
       const layout = layoutRef.current;
@@ -122,26 +195,35 @@ export function MazeRenderer({ maze }: MazeRendererProps) {
         return;
       }
 
-      const { dpr, mazePixelSize } = layout;
+      const { dpr, cellSize, mazePixelSize } = layout;
 
-      // Size main canvas
       canvas.style.width = `${mazePixelSize}px`;
       canvas.style.height = `${mazePixelSize}px`;
-      canvas.width = mazePixelSize * dpr;
-      canvas.height = mazePixelSize * dpr;
-      ctx.scale(dpr, dpr);
+      if (canvas.width !== mazePixelSize * dpr) {
+        canvas.width = mazePixelSize * dpr;
+        canvas.height = mazePixelSize * dpr;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // Draw cached maze
       ctx.drawImage(offscreen, 0, 0, mazePixelSize, mazePixelSize);
 
-      // Agent overlay will be drawn here in Task 5
+      // Draw agent overlay
+      const agent = agentRef.current;
+      if (agent) {
+        drawClassicalAgent(ctx, agent, cellSize);
+      }
 
       rafRef.current = requestAnimationFrame(frame);
     }
 
     rafRef.current = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchEnd]);
 
-  return <canvas ref={canvasRef} />;
+  return <canvas ref={canvasRef} style={{ touchAction: 'none' }} />;
 }
