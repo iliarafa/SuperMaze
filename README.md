@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# Quantum Labyrinth
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A puzzle game that teaches the fundamental difference between classical and quantum search algorithms through direct, tactile gameplay.
 
-Currently, two official plugins are available:
+Two agents. Same maze. Different rules.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The **Classical Agent** searches one path at a time — committing, backtracking, trying again. The **Quantum Agent** exists in superposition — exploring all paths simultaneously as a probability wave, then collapsing to the optimal solution.
 
-## React Compiler
+## Current State (MVP)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Seeded maze generation (recursive backtracking, deterministic per seed)
+- Canvas renderer with Retina/HiDPI scaling
+- Classical agent with touch controls (swipe + tap)
+- Path tracing with backtrack detection and dead end marking
+- 60fps game loop with offscreen canvas optimization
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Layer | Choice |
+|-------|--------|
+| Framework | React 19 |
+| Language | TypeScript |
+| Build | Vite |
+| Rendering | HTML5 Canvas |
+| Testing | Vitest |
+| Mobile (planned) | Capacitor |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173 in a browser. Use Chrome DevTools device emulation for touch controls.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Controls
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Action | Gesture |
+|--------|---------|
+| Move agent | Swipe in direction |
+| Move to adjacent cell | Tap the cell |
+
+## Tests
+
+```bash
+npm test
 ```
+
+## Visual Design
+
+Dark navy background (`#050A14`) with neon blue maze walls (`#1A6B8A`). Classical agent traces an orange path (`#FF7A2F`) with a red cursor. Backtracked paths dim to burnt orange (`#7A3010`). Dead ends marked with X.
+
+## Roadmap
+
+- [ ] Race mode: quantum BFS wave expansion + collapse animation
+- [ ] Observe & Collapse mode: hold-to-charge mechanic
+- [ ] Mode select + level select screens
+- [ ] Scoring + star rating system
+- [ ] Insight cards between levels
+- [ ] Capacitor iOS build
