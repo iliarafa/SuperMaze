@@ -6,10 +6,22 @@ import type { ClassicalAgentState } from '../game/classicalAgent';
 import { moveAgent } from '../game/classicalAgent';
 import { drawClassicalAgent } from '../game/agentRenderer';
 import { detectSwipeDirection, touchToCell } from '../game/touchInput';
+import type { QuantumAgentState } from '../game/quantumAgent';
+import {
+  tickExpansion,
+  startCharge,
+  updateCharge,
+  collapse,
+  startTravel,
+  tickTravel,
+  COLLAPSE_DURATION,
+} from '../game/quantumAgent';
+import { drawQuantumAgent } from '../game/quantumRenderer';
 
 interface MazeRendererProps {
   maze: MazeData;
   agentState?: ClassicalAgentState;
+  quantumState?: QuantumAgentState;
 }
 
 function computeLayout(maze: MazeData) {
@@ -87,17 +99,20 @@ function drawMazeToCanvas(
   ctx.stroke();
 }
 
-export function MazeRenderer({ maze, agentState }: MazeRendererProps) {
+export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
   const layoutRef = useRef<ReturnType<typeof computeLayout> | null>(null);
   const mazeRef = useRef(maze);
   const agentRef = useRef(agentState);
+  const quantumRef = useRef(quantumState);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const expansionStartRef = useRef<number | null>(null);
 
   // Keep refs in sync
   agentRef.current = agentState;
+  quantumRef.current = quantumState;
   mazeRef.current = maze;
 
   // Rebuild offscreen canvas when maze changes
@@ -120,11 +135,46 @@ export function MazeRenderer({ maze, agentState }: MazeRendererProps) {
     e.preventDefault();
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+
+    // Quantum charge start
+    const qState = quantumRef.current;
+    if (qState && qState.phase === 'expanding') {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const fingerX = touch.clientX - rect.left;
+        const fingerY = touch.clientY - rect.top;
+        startCharge(qState, performance.now(), [fingerX, fingerY]);
+      }
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    const qState = quantumRef.current;
+    if (qState && qState.phase === 'charging') {
+      const touch = e.touches[0];
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        qState.fingerPosition = [touch.clientX - rect.left, touch.clientY - rect.top];
+      }
+    }
   }, []);
 
   const handleTouchEnd = useCallback((e: TouchEvent) => {
     e.preventDefault();
     const touch = e.changedTouches[0];
+    const qState = quantumRef.current;
+
+    // Quantum collapse on release
+    if (qState && qState.phase === 'charging') {
+      collapse(qState, performance.now());
+      touchStartRef.current = null;
+      return;
+    }
+
+    // Classical agent touch handling
     const agent = agentRef.current;
     const m = mazeRef.current;
     const layout = layoutRef.current;
@@ -187,6 +237,7 @@ export function MazeRenderer({ maze, agentState }: MazeRendererProps) {
     if (!ctx) return;
 
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     function frame() {
@@ -210,10 +261,40 @@ export function MazeRenderer({ maze, agentState }: MazeRendererProps) {
       // Draw cached maze
       ctx.drawImage(offscreen, 0, 0, mazePixelSize, mazePixelSize);
 
-      // Draw agent overlay
+      // Draw classical agent overlay
       const agent = agentRef.current;
       if (agent) {
         drawClassicalAgent(ctx, agent, cellSize);
+      }
+
+      // Tick and draw quantum agent
+      const qState = quantumRef.current;
+      if (qState) {
+        const now = performance.now();
+
+        if (qState.phase === 'expanding') {
+          if (expansionStartRef.current === null) {
+            expansionStartRef.current = now;
+          }
+          tickExpansion(qState, now - expansionStartRef.current);
+        }
+
+        if (qState.phase === 'charging') {
+          updateCharge(qState, now);
+        }
+
+        if (qState.phase === 'collapsing') {
+          const elapsed = now - qState.collapseStartTime;
+          if (elapsed >= COLLAPSE_DURATION) {
+            startTravel(qState, now);
+          }
+        }
+
+        if (qState.phase === 'travelling') {
+          tickTravel(qState, now);
+        }
+
+        drawQuantumAgent(ctx, qState, cellSize, now);
       }
 
       rafRef.current = requestAnimationFrame(frame);
@@ -223,9 +304,10 @@ export function MazeRenderer({ maze, agentState }: MazeRendererProps) {
     return () => {
       cancelAnimationFrame(rafRef.current);
       canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [handleTouchStart, handleTouchEnd]);
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   return <canvas ref={canvasRef} style={{ touchAction: 'none' }} />;
 }
