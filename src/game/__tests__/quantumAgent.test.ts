@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateMaze, cellIndex, Direction } from '../maze';
 import type { MazeData } from '../maze';
-import { bfsPath, bfsDistanceMap, computeAmplitudes } from '../quantumAgent';
+import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState } from '../quantumAgent';
 
 const AllDirections = [Direction.N, Direction.S, Direction.E, Direction.W];
 
@@ -134,5 +134,50 @@ describe('computeAmplitudes', () => {
     const path = bfsPath(maze);
     const amps = computeAmplitudes(maze, path);
     expect(amps.size).toBe(maze.width * maze.height);
+  });
+});
+
+describe('createQuantumState', () => {
+  it('starts in expanding phase', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    expect(state.phase).toBe('expanding');
+  });
+
+  it('has empty waveFrontier initially', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    expect(state.waveFrontier.size).toBe(0);
+  });
+
+  it('expandQueue covers all cells with non-negative delays', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    expect(state.expandQueue.length).toBe(maze.width * maze.height);
+    for (const item of state.expandQueue) {
+      expect(item.delay).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('expandQueue starts from the maze start cell', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    expect(state.expandQueue[0].x).toBe(maze.start[0]);
+    expect(state.expandQueue[0].y).toBe(maze.start[1]);
+    expect(state.expandQueue[0].delay).toBe(0);
+  });
+
+  it('totalCells equals maze dimensions', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    expect(state.totalCells).toBe(maze.width * maze.height);
+  });
+
+  it('optimalPath is precomputed', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    expect(state.optimalPath.length).toBeGreaterThan(1);
+    expect(state.optimalPath[0]).toEqual(maze.start);
+    expect(state.optimalPath[state.optimalPath.length - 1]).toEqual(maze.exit);
   });
 });

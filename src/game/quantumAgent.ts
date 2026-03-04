@@ -120,3 +120,91 @@ export function computeAmplitudes(
 
   return amps;
 }
+
+export interface QuantumAgentState {
+  phase: 'expanding' | 'charging' | 'collapsing' | 'travelling' | 'finished';
+  waveFrontier: Map<string, number>;   // "x,y" → amplitude 0–1
+  expandQueue: { x: number; y: number; delay: number }[];
+  expandedCount: number;
+  totalCells: number;
+  optimalPath: [number, number][];
+  collapsedPath: [number, number][];
+  amplitudes: Map<string, number>;
+  chargeLevel: number;
+  chargeStartTime: number;
+  fingerPosition: [number, number] | null;
+  travelIndex: number;
+  travelStartTime: number;
+  collapseStartTime: number;
+}
+
+/**
+ * Create initial quantum agent state. Precomputes BFS, amplitudes,
+ * and a jittered flood-fill expansion queue.
+ */
+export function createQuantumState(maze: MazeData): QuantumAgentState {
+  const optimalPath = bfsPath(maze);
+  const amplitudes = computeAmplitudes(maze, optimalPath);
+  const expandQueue = buildExpansionQueue(maze);
+
+  return {
+    phase: 'expanding',
+    waveFrontier: new Map(),
+    expandQueue,
+    expandedCount: 0,
+    totalCells: maze.width * maze.height,
+    optimalPath,
+    collapsedPath: [],
+    amplitudes,
+    chargeLevel: 0,
+    chargeStartTime: 0,
+    fingerPosition: null,
+    travelIndex: 0,
+    travelStartTime: 0,
+    collapseStartTime: 0,
+  };
+}
+
+/**
+ * BFS flood-fill from start with jittered delays (~125ms per cell ± 50ms).
+ */
+function buildExpansionQueue(
+  maze: MazeData
+): { x: number; y: number; delay: number }[] {
+  const { width, height, start } = maze;
+  const visited = new Uint8Array(width * height);
+  const queue: { x: number; y: number; delay: number }[] = [];
+  const bfsQueue: { x: number; y: number; baseDelay: number }[] = [];
+
+  const si = cellIndex(width, start[0], start[1]);
+  visited[si] = 1;
+  bfsQueue.push({ x: start[0], y: start[1], baseDelay: 0 });
+  queue.push({ x: start[0], y: start[1], delay: 0 });
+
+  const BASE_RATE = 125; // ms per cell
+  const JITTER = 50;     // ±ms
+
+  while (bfsQueue.length > 0) {
+    const { x, y, baseDelay } = bfsQueue.shift()!;
+    const cell = maze.cells[cellIndex(width, x, y)];
+
+    for (const dir of AllDirections) {
+      if (!(cell & dir)) continue;
+      const [dx, dy] = DirectionDelta[dir];
+      const nx = x + dx;
+      const ny = y + dy;
+      const ni = cellIndex(width, nx, ny);
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height && !visited[ni]) {
+        visited[ni] = 1;
+        const jitter = (Math.random() - 0.5) * 2 * JITTER;
+        const delay = baseDelay + BASE_RATE + jitter;
+        bfsQueue.push({ x: nx, y: ny, baseDelay: delay });
+        queue.push({ x: nx, y: ny, delay: Math.max(0, delay) });
+      }
+    }
+  }
+
+  // Sort by delay so we process in order
+  queue.sort((a, b) => a.delay - b.delay);
+  return queue;
+}
