@@ -1,4 +1,4 @@
-import { PathCell, ClassicalAgentState } from './classicalAgent';
+import type { PathCell, ClassicalAgentState } from './classicalAgent';
 import { Colors } from './colors';
 
 /**

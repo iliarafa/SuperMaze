@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { generateMaze, Direction, cellIndex, MazeData } from '../maze';
+import type { MazeData } from '../maze';
+import { generateMaze, Direction, cellIndex } from '../maze';
 import {
   createAgentState,
   moveAgent,
-  ClassicalAgentState,
 } from '../classicalAgent';
 
 // Use a small fixed maze for predictable tests
@@ -61,8 +61,6 @@ describe('moveAgent', () => {
       (d) => (cell & d) !== 0
     )!;
     moveAgent(state, maze, openDir);
-    const posAfterMove = [...state.position];
-
     // Move back to start
     const opposites: Record<number, number> = {
       [Direction.N]: Direction.S,

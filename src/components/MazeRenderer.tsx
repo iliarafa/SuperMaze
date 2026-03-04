@@ -1,7 +1,9 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { MazeData, cellIndex, Direction } from '../game/maze';
+import type { MazeData } from '../game/maze';
+import { cellIndex, Direction } from '../game/maze';
 import { Colors } from '../game/colors';
-import { ClassicalAgentState, moveAgent } from '../game/classicalAgent';
+import type { ClassicalAgentState } from '../game/classicalAgent';
+import { moveAgent } from '../game/classicalAgent';
 import { drawClassicalAgent } from '../game/agentRenderer';
 import { detectSwipeDirection, touchToCell } from '../game/touchInput';
 

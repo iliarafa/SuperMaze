@@ -1,4 +1,5 @@
-import { MazeData, Direction, DirectionDelta, cellIndex } from './maze';
+import type { MazeData } from './maze';
+import { Direction, DirectionDelta, cellIndex } from './maze';
 
 export interface PathCell {
   x: number;

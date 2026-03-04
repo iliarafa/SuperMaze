@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMaze, MazeData, Direction, cellIndex } from '../maze';
+import { generateMaze, Direction, cellIndex } from '../maze';
 
 describe('generateMaze', () => {
   it('produces a maze with correct dimensions', () => {
