@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateMaze, cellIndex, Direction } from '../maze';
 import type { MazeData } from '../maze';
-import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState, tickExpansion, startCharge, updateCharge, collapse } from '../quantumAgent';
+import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState, tickExpansion, startCharge, updateCharge, collapse, startTravel, tickTravel } from '../quantumAgent';
 
 const AllDirections = [Direction.N, Direction.S, Direction.E, Direction.W];
 
@@ -316,5 +316,47 @@ describe('collapse', () => {
       const cell = maze.cells[cellIndex(maze.width, px, py)];
       expect(cell & dir).toBeTruthy();
     }
+  });
+});
+
+describe('startTravel', () => {
+  it('transitions from collapsing to travelling', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 1000);
+    collapse(state, 1000);
+    startTravel(state, 1300);
+    expect(state.phase).toBe('travelling');
+    expect(state.travelStartTime).toBe(1300);
+    expect(state.travelIndex).toBe(0);
+  });
+});
+
+describe('tickTravel', () => {
+  it('advances travelIndex over time', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 1000);
+    collapse(state, 1000);
+    startTravel(state, 1300);
+    tickTravel(state, 1800);
+    expect(state.travelIndex).toBeGreaterThan(0);
+  });
+
+  it('finishes when reaching end of collapsed path', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 1000);
+    collapse(state, 1000);
+    startTravel(state, 1300);
+    tickTravel(state, 1300 + state.collapsedPath.length * 200);
+    expect(state.phase).toBe('finished');
+    expect(state.travelIndex).toBe(state.collapsedPath.length - 1);
   });
 });

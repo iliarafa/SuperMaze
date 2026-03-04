@@ -454,3 +454,33 @@ function bfsToOptimalPath(
 
   return null;
 }
+
+const TRAVEL_RATE = 100; // ms per cell
+export const COLLAPSE_DURATION = 300; // ms
+
+/**
+ * Transition from collapsing → travelling after collapse animation.
+ */
+export function startTravel(state: QuantumAgentState, now: number): void {
+  if (state.phase !== 'collapsing') return;
+  state.phase = 'travelling';
+  state.travelStartTime = now;
+  state.travelIndex = 0;
+}
+
+/**
+ * Advance the agent dot along the collapsed path.
+ */
+export function tickTravel(state: QuantumAgentState, now: number): void {
+  if (state.phase !== 'travelling') return;
+  const elapsed = now - state.travelStartTime;
+  const newIndex = Math.min(
+    Math.floor(elapsed / TRAVEL_RATE),
+    state.collapsedPath.length - 1
+  );
+  state.travelIndex = newIndex;
+
+  if (newIndex >= state.collapsedPath.length - 1) {
+    state.phase = 'finished';
+  }
+}
