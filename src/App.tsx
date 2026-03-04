@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, useCallback } from 'react';
 import { generateMaze } from './game/maze';
 import { createAgentState } from './game/classicalAgent';
+import { createQuantumState } from './game/quantumAgent';
+import type { QuantumAgentState } from './game/quantumAgent';
 import { MazeRenderer } from './components/MazeRenderer';
 import { LandingPage } from './components/LandingPage';
 import { ModeSelect } from './components/ModeSelect';
@@ -12,18 +14,22 @@ type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'game';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing');
-  const [_mode, setMode] = useState<GameMode>('race');
+  const [mode, setMode] = useState<GameMode>('race');
   const maze = useMemo(() => generateMaze(25, 25, 42), []);
   const agentState = useRef(createAgentState(maze));
+  const quantumState = useRef<QuantumAgentState | null>(null);
 
   const goToModeSelect = useCallback(() => setScreen('modeSelect'), []);
   const goToHowToPlay = useCallback(() => setScreen('howToPlay'), []);
   const goToLanding = useCallback(() => setScreen('landing'), []);
 
-  const handleSelectMode = useCallback((mode: GameMode) => {
-    setMode(mode);
+  const handleSelectMode = useCallback((selectedMode: GameMode) => {
+    setMode(selectedMode);
+    if (selectedMode === 'observe') {
+      quantumState.current = createQuantumState(maze);
+    }
     setScreen('game');
-  }, []);
+  }, [maze]);
 
   if (screen === 'landing') {
     return <LandingPage onStart={goToModeSelect} />;
@@ -53,7 +59,11 @@ function App() {
         backgroundColor: Colors.background,
       }}
     >
-      <MazeRenderer maze={maze} agentState={agentState.current} />
+      <MazeRenderer
+        maze={maze}
+        agentState={mode === 'race' ? agentState.current : undefined}
+        quantumState={mode === 'observe' ? quantumState.current ?? undefined : undefined}
+      />
     </div>
   );
 }

@@ -56,7 +56,7 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
         title="Observe & Collapse"
         description="Guide a quantum wave. Hold to charge, release to collapse."
         color={Colors.exitNode}
-        available={false}
+        available
         onSelect={handleObserve}
       />
 
