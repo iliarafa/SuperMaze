@@ -8,4 +8,6 @@ export const Colors = {
   classicalCursor: '#FF3333',
   accent: '#6EC6E6',
   textPrimary: '#B8D4E8',
+  quantumWave: '#00E5CC',
+  quantumSuboptimal: '#FFC04D',
 } as const;
