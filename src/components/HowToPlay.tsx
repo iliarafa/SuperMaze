@@ -11,14 +11,16 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
   return (
     <div
       style={{
+        position: 'fixed',
+        inset: 0,
         display: 'flex',
         flexDirection: 'column',
-        minHeight: '100vh',
         backgroundColor: Colors.background,
         padding: '2rem 1.5rem',
         paddingTop: 'calc(2rem + env(safe-area-inset-top))',
         paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
         overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <button
