@@ -123,6 +123,7 @@ export function computeAmplitudes(
 
 export interface QuantumAgentState {
   phase: 'expanding' | 'charging' | 'collapsing' | 'travelling' | 'finished';
+  maze: MazeData;
   waveFrontier: Map<string, number>;   // "x,y" → amplitude 0–1
   expandQueue: { x: number; y: number; delay: number }[];
   expandedCount: number;
@@ -149,6 +150,7 @@ export function createQuantumState(maze: MazeData): QuantumAgentState {
 
   return {
     phase: 'expanding',
+    maze,
     waveFrontier: new Map(),
     expandQueue,
     expandedCount: 0,
@@ -223,4 +225,232 @@ export function tickExpansion(state: QuantumAgentState, elapsedMs: number): void
     state.waveFrontier.set(key, amplitude);
     state.expandedCount++;
   }
+}
+
+const CHARGE_DURATION = 1000; // ms to reach full charge
+
+/**
+ * Attempt to start charging. Returns false if <50% expanded.
+ */
+export function startCharge(
+  state: QuantumAgentState,
+  now: number,
+  fingerPos: [number, number]
+): boolean {
+  if (state.phase !== 'expanding') return false;
+  if (state.expandedCount < state.totalCells * 0.5) return false;
+
+  state.phase = 'charging';
+  state.chargeStartTime = now;
+  state.fingerPosition = fingerPos;
+  state.chargeLevel = 0;
+  return true;
+}
+
+/**
+ * Update charge level based on current time.
+ */
+export function updateCharge(state: QuantumAgentState, now: number): void {
+  if (state.phase !== 'charging') return;
+  const elapsed = now - state.chargeStartTime;
+  state.chargeLevel = Math.min(1, elapsed / CHARGE_DURATION);
+}
+
+/**
+ * Collapse the wave. Computes the resolved path based on charge level.
+ */
+export function collapse(state: QuantumAgentState, now: number): void {
+  if (state.phase !== 'charging') return;
+
+  state.phase = 'collapsing';
+  state.collapseStartTime = now;
+
+  // Determine max deviations from charge level
+  let maxDeviations: number;
+  if (state.chargeLevel >= 0.8) {
+    maxDeviations = 0;
+  } else if (state.chargeLevel >= 0.33) {
+    maxDeviations = 1;
+  } else {
+    maxDeviations = 3;
+  }
+
+  if (maxDeviations === 0) {
+    state.collapsedPath = [...state.optimalPath];
+    return;
+  }
+
+  state.collapsedPath = computeDeviatedPath(state, maxDeviations);
+}
+
+/**
+ * Build a path that deviates from optimal at random junctions.
+ */
+function computeDeviatedPath(
+  state: QuantumAgentState,
+  maxDeviations: number
+): [number, number][] {
+  const optPath = state.optimalPath;
+
+  // Find junctions: optimal path cells with off-path open neighbors (wall-checked)
+  const { maze } = state;
+  const junctionIndices: number[] = [];
+  for (let i = 1; i < optPath.length - 1; i++) {
+    const [x, y] = optPath[i];
+    const cell = maze.cells[cellIndex(maze.width, x, y)];
+    const prevKey = `${optPath[i - 1][0]},${optPath[i - 1][1]}`;
+    const nextKey = `${optPath[i + 1][0]},${optPath[i + 1][1]}`;
+    let offPathNeighbors = 0;
+    for (const dir of AllDirections) {
+      if (!(cell & dir)) continue; // wall — skip
+      const [dx, dy] = DirectionDelta[dir];
+      const nx = x + dx;
+      const ny = y + dy;
+      const nKey = `${nx},${ny}`;
+      if (nKey !== prevKey && nKey !== nextKey) {
+        offPathNeighbors++;
+      }
+    }
+    if (offPathNeighbors > 0) {
+      junctionIndices.push(i);
+    }
+  }
+
+  // Cap deviations at available junctions
+  const actualDeviations = Math.min(maxDeviations, junctionIndices.length);
+  if (actualDeviations === 0) {
+    return [...optPath];
+  }
+
+  // Randomly select junction indices
+  const shuffled = [...junctionIndices];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const deviationPoints = shuffled.slice(0, actualDeviations).sort((a, b) => a - b);
+
+  // Build path, deviating at selected junctions
+  const result: [number, number][] = [];
+  let optIdx = 0;
+
+  for (const devIdx of deviationPoints) {
+    // Skip if we've already passed this junction (prior rejoin jumped ahead)
+    if (devIdx < optIdx) continue;
+
+    // Copy optimal path up to deviation point
+    while (optIdx <= devIdx) {
+      result.push(optPath[optIdx]);
+      optIdx++;
+    }
+
+    // Take a wrong turn — must check wall passages
+    const [jx, jy] = optPath[devIdx];
+    const jCell = maze.cells[cellIndex(maze.width, jx, jy)];
+    const nextOpt = optPath[devIdx + 1];
+    const wrongNeighbors: [number, number][] = [];
+    for (const dir of AllDirections) {
+      if (!(jCell & dir)) continue; // wall — skip
+      const [dx, dy] = DirectionDelta[dir];
+      const nx = jx + dx;
+      const ny = jy + dy;
+      if (
+        !(nx === nextOpt[0] && ny === nextOpt[1]) &&
+        !(result.length > 0 && nx === result[result.length - 1][0] && ny === result[result.length - 1][1])
+      ) {
+        wrongNeighbors.push([nx, ny]);
+      }
+    }
+
+    if (wrongNeighbors.length === 0) continue;
+
+    const wrongCell = wrongNeighbors[Math.floor(Math.random() * wrongNeighbors.length)];
+    result.push(wrongCell);
+
+    // BFS from wrong cell back to a later point on optimal path
+    const rejoinPath = bfsToOptimalPath(
+      state,
+      wrongCell,
+      optPath,
+      devIdx + 1,
+      new Set(result.map(([x, y]) => `${x},${y}`))
+    );
+
+    if (rejoinPath) {
+      for (const cell of rejoinPath.path) {
+        result.push(cell);
+      }
+      optIdx = rejoinPath.rejoinIndex + 1;
+    } else {
+      // Can't rejoin — backtrack to junction and continue on optimal path
+      result.push(optPath[devIdx]);
+      optIdx = devIdx + 1;
+    }
+  }
+
+  // Copy remaining optimal path
+  while (optIdx < optPath.length) {
+    const last = result[result.length - 1];
+    if (!(last[0] === optPath[optIdx][0] && last[1] === optPath[optIdx][1])) {
+      result.push(optPath[optIdx]);
+    }
+    optIdx++;
+  }
+
+  return result;
+}
+
+/**
+ * BFS from a cell back to any cell on optimalPath at index >= minIndex.
+ */
+function bfsToOptimalPath(
+  state: QuantumAgentState,
+  from: [number, number],
+  optimalPath: [number, number][],
+  minIndex: number,
+  visited: Set<string>
+): { path: [number, number][]; rejoinIndex: number } | null {
+  const optSet = new Map<string, number>();
+  for (let i = minIndex; i < optimalPath.length; i++) {
+    optSet.set(`${optimalPath[i][0]},${optimalPath[i][1]}`, i);
+  }
+
+  const bfsVisited = new Set<string>(visited);
+  const parent = new Map<string, string>();
+  const queue: [number, number][] = [from];
+  const startKey = `${from[0]},${from[1]}`;
+  bfsVisited.add(startKey);
+
+  while (queue.length > 0) {
+    const [cx, cy] = queue.shift()!;
+    const key = `${cx},${cy}`;
+
+    if (key !== startKey && optSet.has(key)) {
+      // Reconstruct path
+      const path: [number, number][] = [];
+      let cur = key;
+      while (cur !== startKey) {
+        const [px, py] = cur.split(',').map(Number);
+        path.unshift([px, py] as [number, number]);
+        cur = parent.get(cur)!;
+      }
+      return { path, rejoinIndex: optSet.get(key)! };
+    }
+
+    const cell = state.maze.cells[cellIndex(state.maze.width, cx, cy)];
+    for (const dir of AllDirections) {
+      if (!(cell & dir)) continue; // wall — skip
+      const [dx, dy] = DirectionDelta[dir];
+      const nx = cx + dx;
+      const ny = cy + dy;
+      const nKey = `${nx},${ny}`;
+      if (!bfsVisited.has(nKey)) {
+        bfsVisited.add(nKey);
+        parent.set(nKey, key);
+        queue.push([nx, ny]);
+      }
+    }
+  }
+
+  return null;
 }

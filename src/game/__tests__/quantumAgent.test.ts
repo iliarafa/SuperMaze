@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateMaze, cellIndex, Direction } from '../maze';
 import type { MazeData } from '../maze';
-import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState, tickExpansion } from '../quantumAgent';
+import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState, tickExpansion, startCharge, updateCharge, collapse } from '../quantumAgent';
 
 const AllDirections = [Direction.N, Direction.S, Direction.E, Direction.W];
 
@@ -205,6 +205,116 @@ describe('tickExpansion', () => {
     tickExpansion(state, 1_000_000);
     for (const [key, amp] of state.waveFrontier) {
       expect(amp).toBe(state.amplitudes.get(key));
+    }
+  });
+});
+
+describe('startCharge', () => {
+  it('transitions to charging only when >=50% expanded', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    // Not enough expanded
+    const started = startCharge(state, 100, [50, 50]);
+    expect(started).toBe(false);
+    expect(state.phase).toBe('expanding');
+
+    // Expand everything
+    tickExpansion(state, 1_000_000);
+    const started2 = startCharge(state, 200, [50, 50]);
+    expect(started2).toBe(true);
+    expect(state.phase).toBe('charging');
+    expect(state.chargeStartTime).toBe(200);
+    expect(state.fingerPosition).toEqual([50, 50]);
+  });
+});
+
+describe('updateCharge', () => {
+  it('updates chargeLevel based on elapsed time', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+
+    updateCharge(state, 500);
+    expect(state.chargeLevel).toBeGreaterThan(0);
+    expect(state.chargeLevel).toBeLessThanOrEqual(1);
+  });
+
+  it('caps chargeLevel at 1.0', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+
+    updateCharge(state, 5000);
+    expect(state.chargeLevel).toBe(1);
+  });
+});
+
+describe('collapse', () => {
+  it('transitions to collapsing phase', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 1000);
+    collapse(state, 1000);
+    expect(state.phase).toBe('collapsing');
+  });
+
+  it('produces a collapsedPath from start to exit', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 1000);
+    collapse(state, 1000);
+    expect(state.collapsedPath.length).toBeGreaterThan(1);
+    expect(state.collapsedPath[0]).toEqual(maze.start);
+    expect(state.collapsedPath[state.collapsedPath.length - 1]).toEqual(maze.exit);
+  });
+
+  it('with full charge (>=80%), uses optimal path directly', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 1000);
+    collapse(state, 1000);
+    expect(state.collapsedPath).toEqual(state.optimalPath);
+  });
+
+  it('with zero charge, may deviate but still connects start to exit', () => {
+    const maze = generateMaze(15, 15, 42);
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 0);
+    collapse(state, 0);
+    expect(state.collapsedPath[0]).toEqual(maze.start);
+    expect(state.collapsedPath[state.collapsedPath.length - 1]).toEqual(maze.exit);
+  });
+
+  it('collapsed path has no wall violations', () => {
+    const maze = generateMaze(10, 10, 7);
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    startCharge(state, 0, [50, 50]);
+    updateCharge(state, 200);
+    collapse(state, 200);
+    const path = state.collapsedPath;
+    for (let i = 1; i < path.length; i++) {
+      const [px, py] = path[i - 1];
+      const [cx, cy] = path[i];
+      const dx = cx - px;
+      const dy = cy - py;
+      let dir: number;
+      if (dx === 1) dir = Direction.E;
+      else if (dx === -1) dir = Direction.W;
+      else if (dy === 1) dir = Direction.S;
+      else dir = Direction.N;
+      const cell = maze.cells[cellIndex(maze.width, px, py)];
+      expect(cell & dir).toBeTruthy();
     }
   });
 });
