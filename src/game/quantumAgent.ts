@@ -208,3 +208,19 @@ function buildExpansionQueue(
   queue.sort((a, b) => a.delay - b.delay);
   return queue;
 }
+
+/**
+ * Process expansion queue: add cells whose delay <= elapsedMs to the frontier.
+ * Call this every frame with the total elapsed time since expansion started.
+ */
+export function tickExpansion(state: QuantumAgentState, elapsedMs: number): void {
+  if (state.phase !== 'expanding') return;
+
+  while (state.expandQueue.length > 0 && state.expandQueue[0].delay <= elapsedMs) {
+    const { x, y } = state.expandQueue.shift()!;
+    const key = `${x},${y}`;
+    const amplitude = state.amplitudes.get(key) ?? 0.3;
+    state.waveFrontier.set(key, amplitude);
+    state.expandedCount++;
+  }
+}

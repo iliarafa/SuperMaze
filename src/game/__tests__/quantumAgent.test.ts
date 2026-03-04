@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateMaze, cellIndex, Direction } from '../maze';
 import type { MazeData } from '../maze';
-import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState } from '../quantumAgent';
+import { bfsPath, bfsDistanceMap, computeAmplitudes, createQuantumState, tickExpansion } from '../quantumAgent';
 
 const AllDirections = [Direction.N, Direction.S, Direction.E, Direction.W];
 
@@ -179,5 +179,32 @@ describe('createQuantumState', () => {
     expect(state.optimalPath.length).toBeGreaterThan(1);
     expect(state.optimalPath[0]).toEqual(maze.start);
     expect(state.optimalPath[state.optimalPath.length - 1]).toEqual(maze.exit);
+  });
+});
+
+describe('tickExpansion', () => {
+  it('adds cells to waveFrontier as time passes', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 500);
+    expect(state.waveFrontier.size).toBeGreaterThan(0);
+    expect(state.expandedCount).toBe(state.waveFrontier.size);
+  });
+
+  it('does not expand beyond the queue', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    expect(state.waveFrontier.size).toBe(maze.width * maze.height);
+    expect(state.expandQueue.length).toBe(0);
+  });
+
+  it('assigns precomputed amplitude to each expanded cell', () => {
+    const maze = makeTestMaze();
+    const state = createQuantumState(maze);
+    tickExpansion(state, 1_000_000);
+    for (const [key, amp] of state.waveFrontier) {
+      expect(amp).toBe(state.amplitudes.get(key));
+    }
   });
 });
