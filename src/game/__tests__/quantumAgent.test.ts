@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { generateMaze, cellIndex, Direction } from '../maze';
 import type { MazeData } from '../maze';
-import { bfsPath, bfsDistanceMap } from '../quantumAgent';
+import { bfsPath, bfsDistanceMap, computeAmplitudes } from '../quantumAgent';
+
+const AllDirections = [Direction.N, Direction.S, Direction.E, Direction.W];
 
 function makeTestMaze(): MazeData {
   return generateMaze(5, 5, 42);
@@ -72,5 +74,65 @@ describe('bfsDistanceMap', () => {
     const path = bfsPath(maze);
     const distMap = bfsDistanceMap(maze, path);
     expect(distMap.size).toBe(maze.width * maze.height);
+  });
+});
+
+describe('computeAmplitudes', () => {
+  it('assigns 1.0 to cells on the optimal path', () => {
+    const maze = makeTestMaze();
+    const path = bfsPath(maze);
+    const amps = computeAmplitudes(maze, path);
+    for (const [x, y] of path) {
+      expect(amps.get(`${x},${y}`)).toBe(1.0);
+    }
+  });
+
+  it('assigns 0.6 to cells 1 step off optimal', () => {
+    const maze = makeTestMaze();
+    const path = bfsPath(maze);
+    const distMap = bfsDistanceMap(maze, path);
+    const amps = computeAmplitudes(maze, path);
+    for (const [key, dist] of distMap) {
+      if (dist === 1) {
+        expect(amps.get(key)).toBe(0.6);
+      }
+    }
+  });
+
+  it('assigns 0.3 to cells 2+ steps off optimal (excluding dead ends)', () => {
+    const maze = makeTestMaze();
+    const path = bfsPath(maze);
+    const distMap = bfsDistanceMap(maze, path);
+    const amps = computeAmplitudes(maze, path);
+    for (const [key, dist] of distMap) {
+      if (dist >= 2) {
+        const amp = amps.get(key)!;
+        expect(amp === 0.3 || amp === 0.1).toBe(true);
+      }
+    }
+  });
+
+  it('assigns 0.1 to dead ends (cells with only 1 open neighbor)', () => {
+    const maze = makeTestMaze();
+    const path = bfsPath(maze);
+    const pathSet = new Set(path.map(([x, y]) => `${x},${y}`));
+    const amps = computeAmplitudes(maze, path);
+    for (let y = 0; y < maze.height; y++) {
+      for (let x = 0; x < maze.width; x++) {
+        const cell = maze.cells[cellIndex(maze.width, x, y)];
+        const openCount = AllDirections.filter((d) => (cell & d) !== 0).length;
+        const key = `${x},${y}`;
+        if (openCount === 1 && !pathSet.has(key)) {
+          expect(amps.get(key)).toBe(0.1);
+        }
+      }
+    }
+  });
+
+  it('covers all cells', () => {
+    const maze = makeTestMaze();
+    const path = bfsPath(maze);
+    const amps = computeAmplitudes(maze, path);
+    expect(amps.size).toBe(maze.width * maze.height);
   });
 });

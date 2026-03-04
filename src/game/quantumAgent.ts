@@ -83,3 +83,40 @@ export function bfsDistanceMap(
 
   return dist;
 }
+
+/**
+ * Compute amplitude for every cell based on distance from optimal path.
+ * On path: 1.0, 1 step off: 0.6, 2+ steps off: 0.3, dead ends: 0.1
+ */
+export function computeAmplitudes(
+  maze: MazeData,
+  optimalPath: [number, number][]
+): Map<string, number> {
+  const { width, height } = maze;
+  const distMap = bfsDistanceMap(maze, optimalPath);
+  const amps = new Map<string, number>();
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const key = `${x},${y}`;
+      const dist = distMap.get(key) ?? Infinity;
+      const cell = maze.cells[cellIndex(width, x, y)];
+      const openCount = AllDirections.filter((d) => (cell & d) !== 0).length;
+      const isDeadEnd = openCount === 1;
+
+      let amp: number;
+      if (dist === 0) {
+        amp = 1.0;
+      } else if (isDeadEnd) {
+        amp = 0.1;
+      } else if (dist === 1) {
+        amp = 0.6;
+      } else {
+        amp = 0.3;
+      }
+      amps.set(key, amp);
+    }
+  }
+
+  return amps;
+}
