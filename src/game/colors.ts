@@ -6,4 +6,6 @@ export const Colors = {
   classicalPath: '#FF7A2F',
   classicalBacktrack: '#7A3010',
   classicalCursor: '#FF3333',
+  accent: '#6EC6E6',
+  textPrimary: '#B8D4E8',
 } as const;

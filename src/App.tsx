@@ -1,12 +1,20 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useCallback } from 'react';
 import { generateMaze } from './game/maze';
 import { createAgentState } from './game/classicalAgent';
 import { MazeRenderer } from './components/MazeRenderer';
+import { LandingPage } from './components/LandingPage';
 import { Colors } from './game/colors';
 
 function App() {
+  const [screen, setScreen] = useState<'landing' | 'game'>('landing');
   const maze = useMemo(() => generateMaze(25, 25, 42), []);
   const agentState = useRef(createAgentState(maze));
+
+  const handleStart = useCallback(() => setScreen('game'), []);
+
+  if (screen === 'landing') {
+    return <LandingPage onStart={handleStart} />;
+  }
 
   return (
     <div
