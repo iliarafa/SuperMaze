@@ -3,4 +3,7 @@ export const Colors = {
   wall: '#1A6B8A',
   startNode: '#4D9FFF',
   exitNode: '#00FF88',
+  classicalPath: '#FF7A2F',
+  classicalBacktrack: '#7A3010',
+  classicalCursor: '#FF3333',
 } as const;
