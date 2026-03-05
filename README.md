@@ -6,13 +6,37 @@ Two agents. Same maze. Different rules.
 
 The **Classical Agent** searches one path at a time — committing, backtracking, trying again. The **Quantum Agent** exists in superposition — exploring all paths simultaneously as a probability wave, then collapsing to the optimal solution.
 
-## Current State (MVP)
+## Game Modes
+
+### Race Mode
+
+You control the classical agent (orange). A quantum wave (blue-green) expands automatically through the maze at the same time.
+
+- **You win:** reach the green exit cell (bottom-right) before the quantum agent finishes travelling.
+- **You lose:** the quantum wave collapses and its dot reaches the exit first.
+- **Game ends** when either agent reaches the exit.
+
+At small mazes you can win. At large mazes, quantum's advantage makes it nearly impossible — you feel the scaling difference.
+
+### Observe & Collapse
+
+A quantum wave expands from the start, exploring all paths simultaneously. Once it reaches 50% coverage, hold anywhere to charge a collapse. Release to collapse the wave into a single path.
+
+- **Short hold** (< 1/3 charge): imprecise collapse, up to 3 wrong turns.
+- **Medium hold** (1/3 – 4/5 charge): 1 wrong turn allowed.
+- **Long hold** (> 4/5 charge): perfect collapse onto the optimal path.
+- **Game ends** when the collapsed path is fully travelled to the exit.
+- Green path = optimal. Orange path = suboptimal.
+
+## Features
 
 - Seeded maze generation (recursive backtracking, deterministic per seed)
 - Canvas renderer with Retina/HiDPI scaling
 - Classical agent with touch controls (swipe + tap)
+- Quantum agent with BFS wave expansion and charge-based collapse
 - Path tracing with backtrack detection and dead end marking
 - 60fps game loop with offscreen canvas optimization
+- Mode select screen
 
 ## Tech Stack
 
@@ -53,9 +77,7 @@ Dark navy background (`#050A14`) with neon blue maze walls (`#1A6B8A`). Classica
 
 ## Roadmap
 
-- [ ] Race mode: quantum BFS wave expansion + collapse animation
-- [ ] Observe & Collapse mode: hold-to-charge mechanic
-- [ ] Mode select + level select screens
+- [ ] Level select screen
 - [ ] Scoring + star rating system
 - [ ] Insight cards between levels
 - [ ] Capacitor iOS build

@@ -75,8 +75,13 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
         color={Colors.classicalPath}
         title="Race Mode"
         description="You control the classical agent (orange). A quantum wave (blue-green)
-          expands automatically through the maze. Reach the exit before the wave
-          collapses to its optimal path."
+          expands automatically through the maze. Reach the exit (bottom-right
+          corner) before the wave collapses to its optimal path."
+        rules={[
+          'You win: reach the green exit cell before the quantum agent finishes travelling.',
+          'You lose: the quantum wave collapses and its dot reaches the exit first.',
+          'Game ends when either agent reaches the exit.',
+        ]}
         insight="At small mazes you can win. At large mazes, quantum's advantage
           makes it nearly impossible. You'll feel the scaling difference."
       />
@@ -85,10 +90,17 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
         color={Colors.exitNode}
         title="Observe & Collapse"
         description="A quantum wave expands from the start, exploring all paths.
-          Hold anywhere to charge a collapse. Short hold = imprecise.
-          Long hold = precise, optimal path."
+          Once it reaches 50%, hold anywhere to charge a collapse. Release to
+          collapse the wave into a single path."
+        rules={[
+          'Short hold (< 1/3 charge): imprecise collapse, up to 3 wrong turns.',
+          'Medium hold (1/3 – 4/5 charge): 1 wrong turn allowed.',
+          'Long hold (> 4/5 charge): perfect collapse onto the optimal path.',
+          'Game ends when the collapsed path is fully travelled to the exit.',
+        ]}
         insight="Observing too early collapses the system before it has fully
-          explored. Full superposition = full information = best result."
+          explored. Full superposition = full information = best result.
+          Green path = optimal. Orange path = suboptimal."
       />
 
       <Divider />
@@ -147,11 +159,13 @@ function ModeSection({
   color,
   title,
   description,
+  rules,
   insight,
 }: {
   color: string;
   title: string;
   description: string;
+  rules: string[];
   insight: string;
 }) {
   return (
@@ -187,11 +201,27 @@ function ModeSection({
           color: Colors.textPrimary,
           lineHeight: 1.6,
           opacity: 0.8,
-          marginBottom: '0.8rem',
+          marginBottom: '0.6rem',
         }}
       >
         {description}
       </p>
+      <ul
+        style={{
+          fontFamily: font,
+          fontSize: '0.78rem',
+          fontWeight: 300,
+          color: Colors.textPrimary,
+          lineHeight: 1.6,
+          opacity: 0.7,
+          marginBottom: '0.8rem',
+          paddingLeft: '1.2rem',
+        }}
+      >
+        {rules.map((rule, i) => (
+          <li key={i} style={{ marginBottom: '0.25rem' }}>{rule}</li>
+        ))}
+      </ul>
       <p
         style={{
           fontFamily: font,
