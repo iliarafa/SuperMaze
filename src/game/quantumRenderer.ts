@@ -134,18 +134,19 @@ function drawCollapsedPath(
   }
 }
 
-function drawPath(
+export function drawPath(
   ctx: CanvasRenderingContext2D,
   path: [number, number][],
   color: string,
   cellSize: number,
   half: number,
   progress: number,
-  opacity: number = 1
+  opacity: number = 1,
+  widthFactor: number = 0.15
 ): void {
   const len = Math.max(2, Math.floor(path.length * progress));
   ctx.strokeStyle = opacity < 1 ? withAlpha(color, opacity) : color;
-  ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.15));
+  ctx.lineWidth = Math.max(2, Math.floor(cellSize * widthFactor));
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 

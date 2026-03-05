@@ -46,7 +46,7 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
 
       <ModeCard
         title="Race"
-        description="Control the classical agent. Beat the quantum wave to the exit."
+        description="Find the shortest path. Then watch the quantum solution unfold."
         color={Colors.classicalPath}
         available
         onSelect={handleRace}

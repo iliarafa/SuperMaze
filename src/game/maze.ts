@@ -69,6 +69,26 @@ export function generateMaze(width: number, height: number, seed: number): MazeD
 
   carve(0, 0);
 
+  // Remove ~15% of remaining walls to create loops and multiple paths
+  const LOOP_CHANCE = 0.15;
+  const allDirs = [Direction.N, Direction.S, Direction.E, Direction.W];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const ci = cellIndex(width, x, y);
+      for (const dir of allDirs) {
+        if (cells[ci] & dir) continue; // passage already exists
+        const [dx, dy] = DirectionDelta[dir];
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+        if (rng() < LOOP_CHANCE) {
+          cells[ci] |= dir;
+          cells[cellIndex(width, nx, ny)] |= Opposite[dir];
+        }
+      }
+    }
+  }
+
   return {
     width,
     height,

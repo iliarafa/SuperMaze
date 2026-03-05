@@ -25,9 +25,7 @@ function App() {
 
   const handleSelectMode = useCallback((selectedMode: GameMode) => {
     setMode(selectedMode);
-    if (selectedMode === 'observe') {
-      quantumState.current = createQuantumState(maze);
-    }
+    quantumState.current = selectedMode === 'observe' ? createQuantumState(maze) : null;
     setScreen('game');
   }, [maze]);
 
@@ -62,7 +60,8 @@ function App() {
       <MazeRenderer
         maze={maze}
         agentState={mode === 'race' ? agentState.current : undefined}
-        quantumState={mode === 'observe' ? quantumState.current ?? undefined : undefined}
+        quantumState={quantumState.current ?? undefined}
+        mode={mode}
       />
     </div>
   );

@@ -49,7 +49,7 @@ function drawPathSegments(
   half: number
 ): void {
   ctx.strokeStyle = color;
-  ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.15));
+  ctx.lineWidth = Math.max(3, Math.floor(cellSize * 0.25));
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 

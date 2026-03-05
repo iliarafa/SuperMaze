@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import type { MazeData } from '../game/maze';
 import { cellIndex, Direction } from '../game/maze';
 import { Colors } from '../game/colors';
@@ -8,6 +8,7 @@ import { drawClassicalAgent } from '../game/agentRenderer';
 import { detectSwipeDirection, touchToCell } from '../game/touchInput';
 import type { QuantumAgentState } from '../game/quantumAgent';
 import {
+  createQuantumState,
   tickExpansion,
   startCharge,
   updateCharge,
@@ -16,12 +17,23 @@ import {
   tickTravel,
   COLLAPSE_DURATION,
 } from '../game/quantumAgent';
-import { drawQuantumAgent } from '../game/quantumRenderer';
+import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
+import type { GameMode } from './ModeSelect';
+
+type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
+
+interface ComparisonData {
+  playerMoves: number;
+  playerPathLength: number;
+  optimalLength: number;
+  deadEnds: number;
+}
 
 interface MazeRendererProps {
   maze: MazeData;
   agentState?: ClassicalAgentState;
   quantumState?: QuantumAgentState;
+  mode: GameMode;
 }
 
 function computeLayout(maze: MazeData) {
@@ -99,7 +111,7 @@ function drawMazeToCanvas(
   ctx.stroke();
 }
 
-export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererProps) {
+export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -107,13 +119,18 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
   const mazeRef = useRef(maze);
   const agentRef = useRef(agentState);
   const quantumRef = useRef(quantumState);
+  const modeRef = useRef(mode);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const expansionStartRef = useRef<number | null>(null);
+  const racePhaseRef = useRef<RacePhase>('exploring');
+  const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
+  const [headerText, setHeaderText] = useState<string>('human');
 
   // Keep refs in sync
   agentRef.current = agentState;
   quantumRef.current = quantumState;
   mazeRef.current = maze;
+  modeRef.current = mode;
 
   // Rebuild offscreen canvas when maze changes
   useEffect(() => {
@@ -136,28 +153,32 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
 
-    // Quantum charge start
-    const qState = quantumRef.current;
-    if (qState && qState.phase === 'expanding') {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const fingerX = touch.clientX - rect.left;
-        const fingerY = touch.clientY - rect.top;
-        startCharge(qState, performance.now(), [fingerX, fingerY]);
+    // Quantum charge start (observe mode only)
+    if (modeRef.current === 'observe') {
+      const qState = quantumRef.current;
+      if (qState && qState.phase === 'expanding') {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const fingerX = touch.clientX - rect.left;
+          const fingerY = touch.clientY - rect.top;
+          startCharge(qState, performance.now(), [fingerX, fingerY]);
+        }
       }
     }
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     e.preventDefault();
-    const qState = quantumRef.current;
-    if (qState && qState.phase === 'charging') {
-      const touch = e.touches[0];
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        qState.fingerPosition = [touch.clientX - rect.left, touch.clientY - rect.top];
+    if (modeRef.current === 'observe') {
+      const qState = quantumRef.current;
+      if (qState && qState.phase === 'charging') {
+        const touch = e.touches[0];
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          qState.fingerPosition = [touch.clientX - rect.left, touch.clientY - rect.top];
+        }
       }
     }
   }, []);
@@ -167,9 +188,15 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
     const touch = e.changedTouches[0];
     const qState = quantumRef.current;
 
-    // Quantum collapse on release
-    if (qState && qState.phase === 'charging') {
+    // Quantum collapse on release (observe mode only)
+    if (modeRef.current === 'observe' && qState && qState.phase === 'charging') {
       collapse(qState, performance.now());
+      touchStartRef.current = null;
+      return;
+    }
+
+    // Disable classical input during quantum reveal / comparison in race mode
+    if (modeRef.current === 'race' && racePhaseRef.current !== 'exploring') {
       touchStartRef.current = null;
       return;
     }
@@ -228,7 +255,27 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
     touchStartRef.current = null;
   }, []);
 
-  // Set up canvas, touch events, and rAF loop
+  // Keyboard handler for arrow keys (classical agent)
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (modeRef.current === 'race' && racePhaseRef.current !== 'exploring') return;
+    const agent = agentRef.current;
+    const m = mazeRef.current;
+    if (!agent || !m) return;
+
+    let dir: number | null = null;
+    switch (e.key) {
+      case 'ArrowUp': dir = Direction.N; break;
+      case 'ArrowDown': dir = Direction.S; break;
+      case 'ArrowLeft': dir = Direction.W; break;
+      case 'ArrowRight': dir = Direction.E; break;
+      default: return;
+    }
+
+    e.preventDefault();
+    moveAgent(agent, m, dir);
+  }, []);
+
+  // Set up canvas, touch events, keyboard events, and rAF loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -239,6 +286,7 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
 
     function frame() {
       const layout = layoutRef.current;
@@ -261,40 +309,97 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
       // Draw cached maze
       ctx.drawImage(offscreen, 0, 0, mazePixelSize, mazePixelSize);
 
-      // Draw classical agent overlay
+      const now = performance.now();
+      const currentMode = modeRef.current;
       const agent = agentRef.current;
-      if (agent) {
+      const isComparison = currentMode === 'race' && racePhaseRef.current === 'comparison';
+
+      // Draw classical agent overlay (skip in comparison — we draw clean paths instead)
+      if (agent && !isComparison) {
         drawClassicalAgent(ctx, agent, cellSize);
       }
 
-      // Tick and draw quantum agent
-      const qState = quantumRef.current;
-      if (qState) {
-        const now = performance.now();
+      if (currentMode === 'race') {
+        // Race mode: sequential phases
+        const racePhase = racePhaseRef.current;
 
-        if (qState.phase === 'expanding') {
-          if (expansionStartRef.current === null) {
-            expansionStartRef.current = now;
+        if (racePhase === 'exploring' && agent?.finished) {
+          // Player finished — start quantum reveal
+          const qState = createQuantumState(mazeRef.current);
+          quantumRef.current = qState;
+          expansionStartRef.current = now;
+          racePhaseRef.current = 'quantumReveal';
+          setHeaderText('quantum');
+        }
+
+        if (racePhaseRef.current === 'quantumReveal') {
+          const qState = quantumRef.current;
+          if (qState && expansionStartRef.current !== null) {
+            tickExpansion(qState, now - expansionStartRef.current);
+            drawQuantumAgent(ctx, qState, cellSize, now);
+
+            // Check if expansion is complete
+            if (qState.expandQueue.length === 0) {
+              qState.collapsedPath = [...qState.optimalPath];
+              qState.phase = 'finished';
+              racePhaseRef.current = 'comparison';
+              if (agent) {
+                const activePath = agent.path.filter(c => c.state === 'active');
+                const playerLen = activePath.length - 1;
+                const optimalLen = qState.optimalPath.length - 1;
+                setComparisonData({
+                  playerMoves: agent.moveCount,
+                  playerPathLength: playerLen,
+                  optimalLength: optimalLen,
+                  deadEnds: agent.deadEnds.size,
+                });
+                setHeaderText(playerLen === optimalLen ? 'human is quantum' : 'human is human');
+              }
+            }
           }
-          tickExpansion(qState, now - expansionStartRef.current);
         }
 
-        if (qState.phase === 'charging') {
-          updateCharge(qState, now);
-        }
-
-        if (qState.phase === 'collapsing') {
-          const elapsed = now - qState.collapseStartTime;
-          if (elapsed >= COLLAPSE_DURATION) {
-            startTravel(qState, now);
+        if (racePhaseRef.current === 'comparison') {
+          const qState = quantumRef.current;
+          if (qState && agent) {
+            const half = cellSize / 2;
+            // Draw optimal path (wider, underneath)
+            drawPath(ctx, qState.optimalPath, Colors.exitNode, cellSize, half, 1, 0.5, 0.25);
+            // Draw player's active path on top (thinner)
+            const activeCells: [number, number][] = agent.path
+              .filter(c => c.state === 'active')
+              .map(c => [c.x, c.y]);
+            drawPath(ctx, activeCells, Colors.classicalPath, cellSize, half, 1, 1, 0.12);
           }
         }
+      } else {
+        // Observe mode: existing behavior unchanged
+        const qState = quantumRef.current;
+        if (qState) {
+          if (qState.phase === 'expanding') {
+            if (expansionStartRef.current === null) {
+              expansionStartRef.current = now;
+            }
+            tickExpansion(qState, now - expansionStartRef.current);
+          }
 
-        if (qState.phase === 'travelling') {
-          tickTravel(qState, now);
+          if (qState.phase === 'charging') {
+            updateCharge(qState, now);
+          }
+
+          if (qState.phase === 'collapsing') {
+            const elapsed = now - qState.collapseStartTime;
+            if (elapsed >= COLLAPSE_DURATION) {
+              startTravel(qState, now);
+            }
+          }
+
+          if (qState.phase === 'travelling') {
+            tickTravel(qState, now);
+          }
+
+          drawQuantumAgent(ctx, qState, cellSize, now);
         }
-
-        drawQuantumAgent(ctx, qState, cellSize, now);
       }
 
       rafRef.current = requestAnimationFrame(frame);
@@ -306,8 +411,78 @@ export function MazeRenderer({ maze, agentState, quantumState }: MazeRendererPro
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleKeyDown]);
 
-  return <canvas ref={canvasRef} style={{ touchAction: 'none' }} />;
+  const font =
+    '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif';
+
+  const headerColor =
+    headerText === 'human' ? Colors.classicalPath
+    : headerText === 'quantum' ? Colors.quantumWave
+    : headerText === 'human is quantum' ? Colors.exitNode
+    : Colors.classicalPath;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {mode === 'race' && (
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: '1.2rem',
+            fontWeight: 200,
+            letterSpacing: '0.15em',
+            color: headerColor,
+            textTransform: 'uppercase',
+            marginBottom: '0.75rem',
+          }}
+        >
+          {headerText}
+        </div>
+      )}
+      <canvas ref={canvasRef} style={{ touchAction: 'none' }} />
+      {comparisonData && (
+        <div
+          style={{
+            marginTop: '1rem',
+            display: 'flex',
+            gap: '1.5rem',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            fontFamily: font,
+            fontSize: '0.8rem',
+            fontWeight: 300,
+            color: Colors.textPrimary,
+            letterSpacing: '0.05em',
+          }}
+        >
+          <span>
+            Your path:{' '}
+            <strong style={{ color: Colors.classicalPath, fontWeight: 500 }}>
+              {comparisonData.playerPathLength}
+            </strong>
+          </span>
+          <span>
+            Optimal:{' '}
+            <strong style={{ color: Colors.exitNode, fontWeight: 500 }}>
+              {comparisonData.optimalLength}
+            </strong>
+          </span>
+          <span>
+            Moves:{' '}
+            <strong style={{ fontWeight: 500 }}>
+              {comparisonData.playerMoves}
+            </strong>
+          </span>
+          <span>
+            Dead ends:{' '}
+            <strong style={{ fontWeight: 500 }}>
+              {comparisonData.deadEnds}
+            </strong>
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
