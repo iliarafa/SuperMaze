@@ -41,20 +41,20 @@ const CELL = MAZE_SIZE / CELLS;
 // Maze walls: 1 = wall exists. [horizontal walls (6 rows x 5 cols), vertical walls (5 rows x 6 cols)]
 // Design a simple but recognizable maze path from top-left to bottom-right
 const hWalls = [
-  [1, 1, 1, 1, 1], // top border
+  [0, 0, 0, 0, 0], // top border removed
   [0, 1, 0, 0, 1],
   [1, 0, 1, 1, 0],
   [0, 1, 0, 0, 1],
   [1, 0, 1, 0, 0],
-  [1, 1, 1, 1, 1], // bottom border
+  [0, 0, 0, 0, 0], // bottom border removed
 ];
 
 const vWalls = [
-  [1, 0, 1, 0, 1, 1], // row 0
-  [1, 1, 0, 1, 0, 1],
-  [1, 0, 1, 0, 1, 1],
-  [1, 1, 0, 1, 1, 1],
-  [1, 0, 1, 0, 0, 1], // row 4
+  [0, 0, 1, 0, 1, 0], // row 0 - left/right border removed
+  [0, 1, 0, 1, 0, 0],
+  [0, 0, 1, 0, 1, 0],
+  [0, 1, 0, 1, 1, 0],
+  [0, 0, 1, 0, 0, 0], // row 4 - left/right border removed
 ];
 
 function drawWallSet(strokeStyle, lineWidth) {
