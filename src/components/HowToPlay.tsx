@@ -1,11 +1,8 @@
-import { Colors } from '../game/colors';
+import { Colors, UIColors, UI_FONT } from '../game/colors';
 
 interface HowToPlayProps {
   onBack: () => void;
 }
-
-const font =
-  '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif';
 
 export function HowToPlay({ onBack }: HowToPlayProps) {
   return (
@@ -15,7 +12,7 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
         inset: 0,
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: Colors.background,
+        backgroundColor: UIColors.bg,
         padding: '2rem 1.5rem',
         paddingTop: 'calc(2rem + env(safe-area-inset-top))',
         paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
@@ -29,10 +26,10 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
           alignSelf: 'flex-start',
           background: 'none',
           border: 'none',
-          color: Colors.accent,
-          fontFamily: font,
-          fontSize: '0.85rem',
-          fontWeight: 300,
+          color: UIColors.primary,
+          fontFamily: UI_FONT,
+          fontSize: '0.4rem',
+          fontWeight: 400,
           letterSpacing: '0.05em',
           cursor: 'pointer',
           marginBottom: '2rem',
@@ -40,16 +37,16 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
           WebkitTapHighlightColor: 'transparent',
         }}
       >
-        &larr; back
+        {'< BACK'}
       </button>
 
       <h2
         style={{
-          fontFamily: font,
-          fontSize: '1.4rem',
-          fontWeight: 200,
+          fontFamily: UI_FONT,
+          fontSize: '0.6rem',
+          fontWeight: 400,
           letterSpacing: '0.15em',
-          color: Colors.accent,
+          color: UIColors.highlight,
           textTransform: 'uppercase',
           marginBottom: '2rem',
           textAlign: 'center',
@@ -65,14 +62,13 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
       </Section>
 
       <Section title="Controls">
-        <Row icon="👆" text="Swipe in any direction to move one cell" />
-        <Row icon="👉" text="Tap an adjacent cell to move there" />
+        <Row icon=">" text="Swipe in any direction to move one cell" />
+        <Row icon=">" text="Tap an adjacent cell to move there" />
       </Section>
 
       <Divider />
 
       <ModeSection
-        color={Colors.classicalPath}
         title="Race Mode"
         description="You control the classical agent (orange). A quantum wave (blue-green)
           expands automatically through the maze. Reach the exit (bottom-right
@@ -87,7 +83,6 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
       />
 
       <ModeSection
-        color={Colors.exitNode}
         title="Observe & Collapse"
         description="A quantum wave expands from the start, exploring all paths.
           Once it reaches 50%, hold anywhere to charge a collapse. Release to
@@ -128,11 +123,11 @@ function Section({
     <div style={{ marginBottom: '1.5rem', maxWidth: '360px', alignSelf: 'center', width: '100%' }}>
       <h3
         style={{
-          fontFamily: font,
-          fontSize: '0.9rem',
-          fontWeight: 500,
+          fontFamily: UI_FONT,
+          fontSize: '0.4rem',
+          fontWeight: 400,
           letterSpacing: '0.08em',
-          color: Colors.accent,
+          color: UIColors.primary,
           marginBottom: '0.75rem',
           textTransform: 'uppercase',
         }}
@@ -141,12 +136,11 @@ function Section({
       </h3>
       <div
         style={{
-          fontFamily: font,
-          fontSize: '0.82rem',
-          fontWeight: 300,
-          color: Colors.textPrimary,
-          lineHeight: 1.7,
-          opacity: 0.8,
+          fontFamily: UI_FONT,
+          fontSize: '0.3rem',
+          fontWeight: 400,
+          color: UIColors.dim,
+          lineHeight: 2.0,
         }}
       >
         {children}
@@ -156,13 +150,11 @@ function Section({
 }
 
 function ModeSection({
-  color,
   title,
   description,
   rules,
   insight,
 }: {
-  color: string;
   title: string;
   description: string;
   rules: string[];
@@ -175,19 +167,19 @@ function ModeSection({
         maxWidth: '360px',
         alignSelf: 'center',
         width: '100%',
-        border: `1px solid ${color}`,
-        borderRadius: '12px',
+        border: `1px solid ${UIColors.primary}`,
+        borderRadius: 0,
         padding: '1.2rem',
-        background: `linear-gradient(135deg, rgba(${hexToRgb(color)}, 0.06), transparent)`,
+        background: 'none',
       }}
     >
       <h3
         style={{
-          fontFamily: font,
-          fontSize: '0.95rem',
-          fontWeight: 500,
+          fontFamily: UI_FONT,
+          fontSize: '0.45rem',
+          fontWeight: 400,
           letterSpacing: '0.05em',
-          color,
+          color: UIColors.highlight,
           marginBottom: '0.6rem',
         }}
       >
@@ -195,12 +187,11 @@ function ModeSection({
       </h3>
       <p
         style={{
-          fontFamily: font,
-          fontSize: '0.8rem',
-          fontWeight: 300,
-          color: Colors.textPrimary,
-          lineHeight: 1.6,
-          opacity: 0.8,
+          fontFamily: UI_FONT,
+          fontSize: '0.3rem',
+          fontWeight: 400,
+          color: UIColors.dim,
+          lineHeight: 2.0,
           marginBottom: '0.6rem',
         }}
       >
@@ -208,12 +199,11 @@ function ModeSection({
       </p>
       <ul
         style={{
-          fontFamily: font,
-          fontSize: '0.78rem',
-          fontWeight: 300,
-          color: Colors.textPrimary,
-          lineHeight: 1.6,
-          opacity: 0.7,
+          fontFamily: UI_FONT,
+          fontSize: '0.28rem',
+          fontWeight: 400,
+          color: UIColors.dim,
+          lineHeight: 2.0,
           marginBottom: '0.8rem',
           paddingLeft: '1.2rem',
         }}
@@ -224,12 +214,11 @@ function ModeSection({
       </ul>
       <p
         style={{
-          fontFamily: font,
-          fontSize: '0.75rem',
-          fontWeight: 300,
-          fontStyle: 'italic',
-          color: Colors.textPrimary,
-          lineHeight: 1.5,
+          fontFamily: UI_FONT,
+          fontSize: '0.25rem',
+          fontWeight: 400,
+          color: UIColors.dim,
+          lineHeight: 2.0,
           opacity: 0.5,
         }}
       >
@@ -249,10 +238,10 @@ function Row({ icon, text }: { icon: string; text: string }) {
         marginBottom: '0.4rem',
       }}
     >
-      <span style={{ fontSize: '1rem', width: '1.5rem', textAlign: 'center' }}>
+      <span style={{ fontSize: '1rem', width: '1.5rem', textAlign: 'center', color: UIColors.primary }}>
         {icon}
       </span>
-      <span>{text}</span>
+      <span style={{ color: UIColors.primary }}>{text}</span>
     </div>
   );
 }
@@ -263,7 +252,7 @@ function Divider() {
       style={{
         width: '40px',
         height: '1px',
-        background: `linear-gradient(90deg, transparent, ${Colors.wall}, transparent)`,
+        backgroundColor: UIColors.dim,
         alignSelf: 'center',
         margin: '0.5rem 0 1.5rem',
       }}
@@ -290,14 +279,7 @@ function ColorRow({ color, label }: { color: string; label: string }) {
           flexShrink: 0,
         }}
       />
-      <span>{label}</span>
+      <span style={{ color: UIColors.primary, fontFamily: UI_FONT, fontSize: '0.28rem' }}>{label}</span>
     </div>
   );
-}
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
 }
