@@ -128,7 +128,9 @@ export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRende
 
   // Keep refs in sync
   agentRef.current = agentState;
-  quantumRef.current = quantumState;
+  if (quantumState !== undefined) {
+    quantumRef.current = quantumState;
+  }
   mazeRef.current = maze;
   modeRef.current = mode;
 
