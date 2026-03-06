@@ -1,6 +1,7 @@
 export const Colors = {
   background: '#050A14',
-  wall: '#1A6B8A',
+  wall: '#1E7A9E',
+  wallGlow: 'rgba(30, 122, 158, 0.3)',
   startNode: '#4D9FFF',
   exitNode: '#00FF88',
   classicalPath: '#FFD700',

@@ -8,7 +8,7 @@ import { LandingPage } from './components/LandingPage';
 import { ModeSelect } from './components/ModeSelect';
 import type { GameMode } from './components/ModeSelect';
 import { HowToPlay } from './components/HowToPlay';
-import { Colors } from './game/colors';
+import { UIColors } from './game/colors';
 
 type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'game';
 
@@ -54,7 +54,10 @@ function App() {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        backgroundColor: Colors.background,
+        backgroundColor: UIColors.bg,
+        padding: '1.5rem',
+        paddingTop: 'calc(1.5rem + env(safe-area-inset-top))',
+        paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))',
       }}
     >
       <MazeRenderer
@@ -62,6 +65,7 @@ function App() {
         agentState={mode === 'race' ? agentState.current : undefined}
         quantumState={quantumState.current ?? undefined}
         mode={mode}
+        onBack={goToModeSelect}
       />
     </div>
   );

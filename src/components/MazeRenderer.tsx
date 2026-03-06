@@ -34,6 +34,7 @@ interface MazeRendererProps {
   agentState?: ClassicalAgentState;
   quantumState?: QuantumAgentState;
   mode: GameMode;
+  onBack?: () => void;
 }
 
 function computeLayout(maze: MazeData) {
@@ -44,28 +45,16 @@ function computeLayout(maze: MazeData) {
   return { dpr, cellSize, mazePixelSize };
 }
 
-function drawMazeToCanvas(
+function drawWalls(
   ctx: CanvasRenderingContext2D,
   maze: MazeData,
   cellSize: number,
-  mazePixelSize: number
+  mazePixelSize: number,
+  strokeStyle: string,
+  lineWidth: number
 ): void {
-  ctx.fillStyle = Colors.background;
-  ctx.fillRect(0, 0, mazePixelSize, mazePixelSize);
-
-  const nodeInset = Math.floor(cellSize * 0.2);
-  const nodeSize = cellSize - nodeInset * 2;
-
-  ctx.fillStyle = Colors.startNode;
-  const [sx, sy] = maze.start;
-  ctx.fillRect(sx * cellSize + nodeInset, sy * cellSize + nodeInset, nodeSize, nodeSize);
-
-  ctx.fillStyle = Colors.exitNode;
-  const [ex, ey] = maze.exit;
-  ctx.fillRect(ex * cellSize + nodeInset, ey * cellSize + nodeInset, nodeSize, nodeSize);
-
-  ctx.strokeStyle = Colors.wall;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
   ctx.lineCap = 'square';
 
   for (let y = 0; y < maze.height; y++) {
@@ -111,7 +100,40 @@ function drawMazeToCanvas(
   ctx.stroke();
 }
 
-export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRendererProps) {
+function drawMazeToCanvas(
+  ctx: CanvasRenderingContext2D,
+  maze: MazeData,
+  cellSize: number,
+  mazePixelSize: number
+): void {
+  ctx.fillStyle = Colors.background;
+  ctx.fillRect(0, 0, mazePixelSize, mazePixelSize);
+
+  const nodeInset = Math.floor(cellSize * 0.2);
+  const nodeSize = cellSize - nodeInset * 2;
+
+  // Start node: hollow square outline
+  const [sx, sy] = maze.start;
+  ctx.strokeStyle = Colors.startNode;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(sx * cellSize + nodeInset, sy * cellSize + nodeInset, nodeSize, nodeSize);
+
+  // Exit node: filled with glow
+  const [ex, ey] = maze.exit;
+  const glowInset = Math.floor(cellSize * 0.1);
+  const glowSize = cellSize - glowInset * 2;
+  ctx.fillStyle = 'rgba(0, 255, 136, 0.15)';
+  ctx.fillRect(ex * cellSize + glowInset, ey * cellSize + glowInset, glowSize, glowSize);
+  ctx.fillStyle = Colors.exitNode;
+  ctx.fillRect(ex * cellSize + nodeInset, ey * cellSize + nodeInset, nodeSize, nodeSize);
+
+  // Glow pass: wider, translucent walls
+  drawWalls(ctx, maze, cellSize, mazePixelSize, Colors.wallGlow, 6);
+  // Crisp pass: sharp walls on top
+  drawWalls(ctx, maze, cellSize, mazePixelSize, Colors.wall, 2);
+}
+
+export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -417,66 +439,99 @@ export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRende
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleKeyDown]);
 
-  const font = UI_FONT;
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {mode === 'race' && (
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: '0.6rem',
-            fontWeight: 400,
-            letterSpacing: '0.15em',
-            color: UIColors.highlight,
-            textTransform: 'uppercase',
-            marginBottom: '0.75rem',
-          }}
-        >
-          {headerText}
-        </div>
-      )}
-      <canvas ref={canvasRef} style={{ touchAction: 'none' }} />
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '1rem',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          fontFamily: UI_FONT,
+          fontSize: '0.6rem',
+          fontWeight: 400,
+          letterSpacing: '0.15em',
+          color: UIColors.highlight,
+          textTransform: 'uppercase',
+        }}
+      >
+        {mode === 'race' ? headerText : 'observe'}
+      </div>
+
+      {/* Bordered canvas frame */}
+      <div
+        style={{
+          border: `1px solid ${UIColors.primary}`,
+          lineHeight: 0,
+        }}
+      >
+        <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
+      </div>
+
+      {/* Comparison stats */}
       {comparisonData && (
         <div
           style={{
-            marginTop: '1rem',
+            border: `1px solid ${UIColors.primary}`,
+            padding: '1rem 1.2rem',
             display: 'flex',
             gap: '1.5rem',
             flexWrap: 'wrap',
             justifyContent: 'center',
-            fontFamily: font,
-            fontSize: '0.35rem',
+            fontFamily: UI_FONT,
+            fontSize: '0.3rem',
             fontWeight: 400,
             color: UIColors.primary,
             letterSpacing: '0.05em',
+            lineHeight: 1.8,
           }}
         >
           <span>
             Your path:{' '}
-            <strong style={{ color: Colors.classicalPath, fontWeight: 400 }}>
+            <span style={{ color: Colors.classicalPath }}>
               {comparisonData.playerPathLength}
-            </strong>
+            </span>
           </span>
           <span>
             Optimal:{' '}
-            <strong style={{ color: Colors.exitNode, fontWeight: 400 }}>
+            <span style={{ color: Colors.exitNode }}>
               {comparisonData.optimalLength}
-            </strong>
+            </span>
           </span>
           <span>
             Moves:{' '}
-            <strong style={{ fontWeight: 400 }}>
-              {comparisonData.playerMoves}
-            </strong>
+            <span>{comparisonData.playerMoves}</span>
           </span>
           <span>
             Dead ends:{' '}
-            <strong style={{ fontWeight: 400 }}>
-              {comparisonData.deadEnds}
-            </strong>
+            <span>{comparisonData.deadEnds}</span>
           </span>
         </div>
+      )}
+
+      {/* Back button */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: UIColors.dim,
+            fontFamily: UI_FONT,
+            fontSize: '0.35rem',
+            fontWeight: 400,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+            textTransform: 'uppercase',
+          }}
+        >
+          back
+        </button>
       )}
     </div>
   );
