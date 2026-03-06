@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 export interface Settings {
   joystickEnabled: boolean;
   soundEnabled: boolean;
+  tiltEnabled: boolean;
 }
 
 const STORAGE_KEY = 'labyrinth-settings';
@@ -10,6 +11,7 @@ const STORAGE_KEY = 'labyrinth-settings';
 const DEFAULTS: Settings = {
   joystickEnabled: false,
   soundEnabled: true,
+  tiltEnabled: false,
 };
 
 export function getSettings(): Settings {

@@ -76,6 +76,7 @@ function App() {
         quantumState={quantumState.current ?? undefined}
         mode={mode}
         joystickEnabled={settings.joystickEnabled}
+        tiltEnabled={settings.tiltEnabled}
         onBack={goToModeSelect}
       />
     </div>

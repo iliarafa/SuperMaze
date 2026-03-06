@@ -1,5 +1,6 @@
 import { UI_FONT, UIColors } from '../game/colors';
 import { useSettings } from '../game/settings';
+import { requestTiltPermission } from '../game/tiltInput';
 
 interface SettingsProps {
   onBack: () => void;
@@ -92,7 +93,27 @@ export function Settings({ onBack }: SettingsProps) {
       <ToggleRow
         label="SWIPE PAD"
         value={settings.joystickEnabled}
-        onToggle={() => update('joystickEnabled', !settings.joystickEnabled)}
+        onToggle={() => {
+          const next = !settings.joystickEnabled;
+          update('joystickEnabled', next);
+          if (next && settings.tiltEnabled) update('tiltEnabled', false);
+        }}
+      />
+
+      <ToggleRow
+        label="TILT MAZE"
+        value={settings.tiltEnabled}
+        onToggle={async () => {
+          if (!settings.tiltEnabled) {
+            const result = await requestTiltPermission();
+            if (result === 'granted') {
+              update('tiltEnabled', true);
+              if (settings.joystickEnabled) update('joystickEnabled', false);
+            }
+          } else {
+            update('tiltEnabled', false);
+          }
+        }}
       />
 
       <ToggleRow

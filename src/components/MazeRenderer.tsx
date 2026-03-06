@@ -16,11 +16,13 @@ import {
   startTravel,
   tickTravel,
   COLLAPSE_DURATION,
+  TRAVEL_RATE,
 } from '../game/quantumAgent';
 import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
 import { SwipePad } from './SwipePad';
 import { playSound } from '../game/audio';
+import { useTiltMovement } from '../game/tiltInput';
 
 type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
 
@@ -44,6 +46,8 @@ interface ComparisonData {
   playerPathLength: number;
   optimalLength: number;
   deadEnds: number;
+  playerTime: number;
+  quantumTime: number;
 }
 
 interface MazeRendererProps {
@@ -52,6 +56,7 @@ interface MazeRendererProps {
   quantumState?: QuantumAgentState;
   mode: GameMode;
   joystickEnabled?: boolean;
+  tiltEnabled?: boolean;
   onBack?: () => void;
 }
 
@@ -151,7 +156,7 @@ function drawMazeToCanvas(
   drawWalls(ctx, maze, cellSize, mazePixelSize, Colors.wall, 2);
 }
 
-export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEnabled, onBack }: MazeRendererProps) {
+export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEnabled, tiltEnabled, onBack }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -327,6 +332,10 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
     moveWithSound(agent, m, dir);
   }, []);
 
+  // Tilt control
+  const tiltIsActive = !!(tiltEnabled && mode === 'race' && !comparisonData);
+  const { calibrate: calibrateTilt } = useTiltMovement(tiltIsActive, handlePadDirection);
+
   // Set up canvas, touch events, keyboard events, and rAF loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -335,9 +344,11 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    if (!tiltIsActive) {
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
     window.addEventListener('keydown', handleKeyDown);
 
     function frame() {
@@ -400,13 +411,19 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
                 const activePath = agent.path.filter(c => c.state === 'active');
                 const playerLen = activePath.length - 1;
                 const optimalLen = qState.optimalPath.length - 1;
+                const playerTime = (agent.endTime ?? 0) - (agent.startTime ?? 0);
+                const quantumTime = optimalLen * TRAVEL_RATE;
                 setComparisonData({
                   playerMoves: agent.moveCount,
                   playerPathLength: playerLen,
                   optimalLength: optimalLen,
                   deadEnds: agent.deadEnds.size,
+                  playerTime,
+                  quantumTime,
                 });
-                setHeaderText(playerLen === optimalLen ? 'human is quantum' : 'human is human');
+                const isOptimal = playerLen === optimalLen;
+                const isFasterThanQuantum = isOptimal && playerTime <= quantumTime;
+                setHeaderText(isFasterThanQuantum ? 'quantum is human' : isOptimal ? 'human is quantum' : 'human is human');
               }
             }
           }
@@ -482,7 +499,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
       canvas.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleKeyDown]);
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleKeyDown, tiltIsActive]);
 
   return (
     <div
@@ -531,8 +548,31 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
         }}
       >
         {/* Swipe pad */}
-        {joystickEnabled && mode === 'race' && !comparisonData && (
+        {joystickEnabled && !tiltIsActive && mode === 'race' && !comparisonData && (
           <SwipePad onDirection={handlePadDirection} />
+        )}
+
+        {/* Tilt calibrate */}
+        {tiltIsActive && (
+          <button
+            onClick={calibrateTilt}
+            style={{
+              background: 'none',
+              border: `1px solid ${UIColors.primary}`,
+              borderRadius: 0,
+              color: UIColors.highlight,
+              fontFamily: UI_FONT,
+              fontSize: '0.6rem',
+              fontWeight: 400,
+              letterSpacing: '0.1em',
+              padding: '0.8rem 1.5rem',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              textTransform: 'uppercase',
+            }}
+          >
+            calibrate
+          </button>
         )}
 
         {/* Comparison stats */}
@@ -572,6 +612,14 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
             <span>
               Dead ends:{' '}
               <span>{comparisonData.deadEnds}</span>
+            </span>
+            <span>
+              Human:{' '}
+              <span>{(comparisonData.playerTime / 1000).toFixed(1)}s</span>
+            </span>
+            <span>
+              Quantum:{' '}
+              <span>{(comparisonData.quantumTime / 1000).toFixed(1)}s</span>
             </span>
           </div>
         )}

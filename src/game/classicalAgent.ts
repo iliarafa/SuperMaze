@@ -13,6 +13,8 @@ export interface ClassicalAgentState {
   deadEnds: Set<string>;
   moveCount: number;
   finished: boolean;
+  startTime: number | null;
+  endTime: number | null;
 }
 
 export function createAgentState(maze: MazeData): ClassicalAgentState {
@@ -23,6 +25,8 @@ export function createAgentState(maze: MazeData): ClassicalAgentState {
     deadEnds: new Set(),
     moveCount: 0,
     finished: false,
+    startTime: null,
+    endTime: null,
   };
 }
 
@@ -73,11 +77,15 @@ export function moveAgent(
   // Add new position to path
   state.path.push({ x: nx, y: ny, state: 'active' });
   state.position = [nx, ny];
+  if (state.moveCount === 0) {
+    state.startTime = performance.now();
+  }
   state.moveCount++;
 
   // Check win condition
   if (nx === maze.exit[0] && ny === maze.exit[1]) {
     state.finished = true;
+    state.endTime = performance.now();
   }
 
   return true;

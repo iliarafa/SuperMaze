@@ -455,7 +455,7 @@ function bfsToOptimalPath(
   return null;
 }
 
-const TRAVEL_RATE = 100; // ms per cell
+export const TRAVEL_RATE = 100; // ms per cell
 export const COLLAPSE_DURATION = 300; // ms
 
 /**
