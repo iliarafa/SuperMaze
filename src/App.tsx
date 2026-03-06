@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { generateMaze } from './game/maze';
 import { createAgentState } from './game/classicalAgent';
 import { createQuantumState } from './game/quantumAgent';
@@ -17,8 +17,9 @@ type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'settings' | 'game';
 function App() {
   const [screen, setScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<GameMode>('race');
-  const maze = useMemo(() => generateMaze(25, 25, Date.now()), []);
-  const agentState = useRef(createAgentState(maze));
+  const [gameKey, setGameKey] = useState(0);
+  const mazeRef = useRef(generateMaze(25, 25, Date.now()));
+  const agentState = useRef(createAgentState(mazeRef.current));
   const quantumState = useRef<QuantumAgentState | null>(null);
 
   const [settings] = useSettings();
@@ -28,11 +29,21 @@ function App() {
   const goToSettings = useCallback(() => setScreen('settings'), []);
   const goToLanding = useCallback(() => setScreen('landing'), []);
 
-  const handleSelectMode = useCallback((selectedMode: GameMode) => {
+  const startNewGame = useCallback((selectedMode: GameMode) => {
+    const newMaze = generateMaze(25, 25, Date.now());
+    mazeRef.current = newMaze;
+    agentState.current = createAgentState(newMaze);
+    quantumState.current = selectedMode === 'observe' ? createQuantumState(newMaze) : null;
     setMode(selectedMode);
-    quantumState.current = selectedMode === 'observe' ? createQuantumState(maze) : null;
+    setGameKey(k => k + 1);
     setScreen('game');
-  }, [maze]);
+  }, []);
+
+  const handleSelectMode = startNewGame;
+
+  const handleRetry = useCallback(() => {
+    startNewGame(mode);
+  }, [startNewGame, mode]);
 
   if (screen === 'landing') {
     return <LandingPage onStart={goToModeSelect} />;
@@ -71,13 +82,15 @@ function App() {
       }}
     >
       <MazeRenderer
-        maze={maze}
+        key={gameKey}
+        maze={mazeRef.current}
         agentState={mode === 'race' ? agentState.current : undefined}
         quantumState={quantumState.current ?? undefined}
         mode={mode}
         joystickEnabled={settings.joystickEnabled}
         tiltEnabled={settings.tiltEnabled}
         onBack={goToModeSelect}
+        onRetry={handleRetry}
       />
     </div>
   );

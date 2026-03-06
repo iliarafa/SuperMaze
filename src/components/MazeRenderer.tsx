@@ -22,7 +22,7 @@ import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
 import { SwipePad } from './SwipePad';
 import { playSound, startWaveExpand, stopWaveExpand } from '../game/audio';
-import { useTiltMovement } from '../game/tiltInput';
+import { useTiltMovement, requestTiltPermission } from '../game/tiltInput';
 
 type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
 
@@ -58,6 +58,7 @@ interface MazeRendererProps {
   joystickEnabled?: boolean;
   tiltEnabled?: boolean;
   onBack?: () => void;
+  onRetry?: () => void;
 }
 
 function computeLayout(maze: MazeData) {
@@ -156,7 +157,7 @@ function drawMazeToCanvas(
   drawWalls(ctx, maze, cellSize, mazePixelSize, Colors.wall, 2);
 }
 
-export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEnabled, tiltEnabled, onBack }: MazeRendererProps) {
+export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEnabled, tiltEnabled, onBack, onRetry }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -351,7 +352,9 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
 
   // Tilt control
   const tiltIsActive = !!(tiltEnabled && mode === 'race' && !comparisonData);
-  const { calibrate: calibrateTilt } = useTiltMovement(tiltIsActive, handlePadDirection);
+  const { active: tiltReceiving, calibrate: calibrateTilt } = useTiltMovement(tiltIsActive, handlePadDirection);
+  // Show swipe pad as fallback if tilt is enabled but device isn't sending events
+  const showSwipePad = mode === 'race' && !comparisonData && (joystickEnabled || (tiltIsActive && !tiltReceiving));
 
   // Set up canvas, touch events, keyboard events, and rAF loop
   useEffect(() => {
@@ -568,13 +571,39 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           minHeight: 110,
         }}
       >
-        {/* Swipe pad */}
-        {joystickEnabled && !tiltIsActive && mode === 'race' && !comparisonData && (
+        {/* Swipe pad (also shown as fallback when tilt is enabled but not receiving events) */}
+        {showSwipePad && !tiltReceiving && (
           <SwipePad onDirection={handlePadDirection} />
         )}
 
-        {/* Tilt calibrate */}
-        {tiltIsActive && (
+        {/* Tilt: re-request permission button when not receiving events, calibrate when active */}
+        {tiltIsActive && !tiltReceiving && (
+          <button
+            onClick={async () => {
+              const result = await requestTiltPermission();
+              if (result === 'granted') {
+                calibrateTilt();
+              }
+            }}
+            style={{
+              background: 'none',
+              border: `1px solid ${UIColors.primary}`,
+              borderRadius: 0,
+              color: UIColors.highlight,
+              fontFamily: UI_FONT,
+              fontSize: '0.6rem',
+              fontWeight: 400,
+              letterSpacing: '0.1em',
+              padding: '0.8rem 1.5rem',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              textTransform: 'uppercase',
+            }}
+          >
+            tap to enable tilt
+          </button>
+        )}
+        {tiltIsActive && tiltReceiving && (
           <button
             onClick={calibrateTilt}
             style={{
@@ -646,26 +675,47 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
         )}
       </div>
 
-      {/* Back button — outside the fixed slot */}
-      {onBack && (
-        <button
-          onClick={onBack}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: UIColors.dim,
-            fontFamily: UI_FONT,
-            fontSize: '0.65rem',
-            fontWeight: 400,
-            letterSpacing: '0.08em',
-            cursor: 'pointer',
-            WebkitTapHighlightColor: 'transparent',
-            textTransform: 'uppercase',
-          }}
-        >
-          back
-        </button>
-      )}
+      {/* Bottom buttons — outside the fixed slot */}
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: UIColors.dim,
+              fontFamily: UI_FONT,
+              fontSize: '0.65rem',
+              fontWeight: 400,
+              letterSpacing: '0.08em',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              textTransform: 'uppercase',
+            }}
+          >
+            back
+          </button>
+        )}
+        {onRetry && comparisonData && (
+          <button
+            onClick={onRetry}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: UIColors.highlight,
+              fontFamily: UI_FONT,
+              fontSize: '0.65rem',
+              fontWeight: 400,
+              letterSpacing: '0.08em',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              textTransform: 'uppercase',
+            }}
+          >
+            retry
+          </button>
+        )}
+      </div>
     </div>
   );
 }
