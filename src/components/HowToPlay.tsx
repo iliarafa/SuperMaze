@@ -28,7 +28,7 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
           border: 'none',
           color: UIColors.primary,
           fontFamily: UI_FONT,
-          fontSize: '0.4rem',
+          fontSize: '0.75rem',
           fontWeight: 400,
           letterSpacing: '0.05em',
           cursor: 'pointer',
@@ -43,7 +43,7 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
       <h2
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.6rem',
+          fontSize: '1.1rem',
           fontWeight: 400,
           letterSpacing: '0.15em',
           color: UIColors.highlight,
@@ -124,7 +124,7 @@ function Section({
       <h3
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.4rem',
+          fontSize: '0.75rem',
           fontWeight: 400,
           letterSpacing: '0.08em',
           color: UIColors.primary,
@@ -137,7 +137,7 @@ function Section({
       <div
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.3rem',
+          fontSize: '0.6rem',
           fontWeight: 400,
           color: UIColors.dim,
           lineHeight: 2.0,
@@ -176,7 +176,7 @@ function ModeSection({
       <h3
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.45rem',
+          fontSize: '0.85rem',
           fontWeight: 400,
           letterSpacing: '0.05em',
           color: UIColors.highlight,
@@ -188,7 +188,7 @@ function ModeSection({
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.3rem',
+          fontSize: '0.6rem',
           fontWeight: 400,
           color: UIColors.dim,
           lineHeight: 2.0,
@@ -200,7 +200,7 @@ function ModeSection({
       <ul
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.28rem',
+          fontSize: '0.55rem',
           fontWeight: 400,
           color: UIColors.dim,
           lineHeight: 2.0,
@@ -215,7 +215,7 @@ function ModeSection({
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.25rem',
+          fontSize: '0.5rem',
           fontWeight: 400,
           color: UIColors.dim,
           lineHeight: 2.0,
@@ -279,7 +279,7 @@ function ColorRow({ color, label }: { color: string; label: string }) {
           flexShrink: 0,
         }}
       />
-      <span style={{ color: UIColors.primary, fontFamily: UI_FONT, fontSize: '0.28rem' }}>{label}</span>
+      <span style={{ color: UIColors.primary, fontFamily: UI_FONT, fontSize: '0.55rem' }}>{label}</span>
     </div>
   );
 }

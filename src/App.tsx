@@ -8,9 +8,11 @@ import { LandingPage } from './components/LandingPage';
 import { ModeSelect } from './components/ModeSelect';
 import type { GameMode } from './components/ModeSelect';
 import { HowToPlay } from './components/HowToPlay';
+import { Settings } from './components/Settings';
 import { UIColors } from './game/colors';
+import { useSettings } from './game/settings';
 
-type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'game';
+type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'settings' | 'game';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing');
@@ -19,8 +21,11 @@ function App() {
   const agentState = useRef(createAgentState(maze));
   const quantumState = useRef<QuantumAgentState | null>(null);
 
+  const [settings] = useSettings();
+
   const goToModeSelect = useCallback(() => setScreen('modeSelect'), []);
   const goToHowToPlay = useCallback(() => setScreen('howToPlay'), []);
+  const goToSettings = useCallback(() => setScreen('settings'), []);
   const goToLanding = useCallback(() => setScreen('landing'), []);
 
   const handleSelectMode = useCallback((selectedMode: GameMode) => {
@@ -38,6 +43,7 @@ function App() {
       <ModeSelect
         onSelectMode={handleSelectMode}
         onHowToPlay={goToHowToPlay}
+        onSettings={goToSettings}
         onBack={goToLanding}
       />
     );
@@ -45,6 +51,10 @@ function App() {
 
   if (screen === 'howToPlay') {
     return <HowToPlay onBack={goToModeSelect} />;
+  }
+
+  if (screen === 'settings') {
+    return <Settings onBack={goToModeSelect} />;
   }
 
   return (
@@ -65,6 +75,7 @@ function App() {
         agentState={mode === 'race' ? agentState.current : undefined}
         quantumState={quantumState.current ?? undefined}
         mode={mode}
+        joystickEnabled={settings.joystickEnabled}
         onBack={goToModeSelect}
       />
     </div>

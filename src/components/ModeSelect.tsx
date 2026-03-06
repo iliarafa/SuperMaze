@@ -6,10 +6,11 @@ export type GameMode = 'race' | 'observe';
 interface ModeSelectProps {
   onSelectMode: (mode: GameMode) => void;
   onHowToPlay: () => void;
+  onSettings: () => void;
   onBack: () => void;
 }
 
-export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProps) {
+export function ModeSelect({ onSelectMode, onHowToPlay, onSettings, onBack }: ModeSelectProps) {
   const handleRace = useCallback(() => onSelectMode('race'), [onSelectMode]);
   const handleObserve = useCallback(() => onSelectMode('observe'), [onSelectMode]);
 
@@ -30,7 +31,7 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
       <h2
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.6rem',
+          fontSize: '1.1rem',
           fontWeight: 400,
           letterSpacing: '0.15em',
           color: UIColors.highlight,
@@ -55,25 +56,51 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
         onSelect={handleObserve}
       />
 
-      <button
-        onClick={onHowToPlay}
+      <div
         style={{
+          display: 'flex',
+          gap: '1rem',
           marginTop: '2rem',
-          background: 'none',
-          border: `1px solid ${UIColors.primary}`,
-          borderRadius: 0,
-          padding: '0.7rem 1.5rem',
-          color: UIColors.primary,
-          fontFamily: UI_FONT,
-          fontSize: '0.4rem',
-          fontWeight: 400,
-          letterSpacing: '0.08em',
-          cursor: 'pointer',
-          WebkitTapHighlightColor: 'transparent',
         }}
       >
-        HOW TO PLAY
-      </button>
+        <button
+          onClick={onHowToPlay}
+          style={{
+            background: 'none',
+            border: `1px solid ${UIColors.primary}`,
+            borderRadius: 0,
+            padding: '0.7rem 1.5rem',
+            color: UIColors.primary,
+            fontFamily: UI_FONT,
+            fontSize: '0.75rem',
+            fontWeight: 400,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          HOW TO PLAY
+        </button>
+
+        <button
+          onClick={onSettings}
+          style={{
+            background: 'none',
+            border: `1px solid ${UIColors.primary}`,
+            borderRadius: 0,
+            padding: '0.7rem 1.5rem',
+            color: UIColors.primary,
+            fontFamily: UI_FONT,
+            fontSize: '0.75rem',
+            fontWeight: 400,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          SETTINGS
+        </button>
+      </div>
 
       <button
         onClick={onBack}
@@ -83,7 +110,7 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
           border: 'none',
           color: UIColors.dim,
           fontFamily: UI_FONT,
-          fontSize: '0.35rem',
+          fontSize: '0.65rem',
           fontWeight: 400,
           letterSpacing: '0.08em',
           cursor: 'pointer',
@@ -135,7 +162,7 @@ function ModeCard({
         <h3
           style={{
             fontFamily: UI_FONT,
-            fontSize: '0.5rem',
+            fontSize: '0.9rem',
             fontWeight: 400,
             color: UIColors.highlight,
             letterSpacing: '0.05em',
@@ -147,7 +174,7 @@ function ModeCard({
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.35rem',
+          fontSize: '0.65rem',
           fontWeight: 400,
           color: UIColors.dim,
           lineHeight: 1.8,

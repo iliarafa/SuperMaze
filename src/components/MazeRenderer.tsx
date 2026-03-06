@@ -19,6 +19,7 @@ import {
 } from '../game/quantumAgent';
 import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
+import { SwipePad } from './SwipePad';
 
 type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
 
@@ -34,6 +35,7 @@ interface MazeRendererProps {
   agentState?: ClassicalAgentState;
   quantumState?: QuantumAgentState;
   mode: GameMode;
+  joystickEnabled?: boolean;
   onBack?: () => void;
 }
 
@@ -133,7 +135,7 @@ function drawMazeToCanvas(
   drawWalls(ctx, maze, cellSize, mazePixelSize, Colors.wall, 2);
 }
 
-export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: MazeRendererProps) {
+export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEnabled, onBack }: MazeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -299,6 +301,15 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: M
     moveAgent(agent, m, dir);
   }, []);
 
+  // Swipe pad direction handler
+  const handlePadDirection = useCallback((dir: number) => {
+    if (modeRef.current === 'race' && racePhaseRef.current !== 'exploring') return;
+    const agent = agentRef.current;
+    const m = mazeRef.current;
+    if (!agent || !m) return;
+    moveAgent(agent, m, dir);
+  }, []);
+
   // Set up canvas, touch events, keyboard events, and rAF loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -445,14 +456,16 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: M
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '1rem',
+        justifyContent: 'center',
+        gap: '2.5rem',
+        minHeight: '100%',
       }}
     >
       {/* Header */}
       <div
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.6rem',
+          fontSize: '2rem',
           fontWeight: 400,
           letterSpacing: '0.15em',
           color: UIColors.highlight,
@@ -472,6 +485,11 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: M
         <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
       </div>
 
+      {/* Swipe pad */}
+      {joystickEnabled && mode === 'race' && (
+        <SwipePad onDirection={handlePadDirection} />
+      )}
+
       {/* Comparison stats */}
       {comparisonData && (
         <div
@@ -483,7 +501,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: M
             flexWrap: 'wrap',
             justifyContent: 'center',
             fontFamily: UI_FONT,
-            fontSize: '0.3rem',
+            fontSize: '0.6rem',
             fontWeight: 400,
             color: UIColors.primary,
             letterSpacing: '0.05em',
@@ -522,7 +540,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, onBack }: M
             border: 'none',
             color: UIColors.dim,
             fontFamily: UI_FONT,
-            fontSize: '0.35rem',
+            fontSize: '0.65rem',
             fontWeight: 400,
             letterSpacing: '0.08em',
             cursor: 'pointer',

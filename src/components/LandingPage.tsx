@@ -33,7 +33,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '1.2rem',
+          fontSize: '2.4rem',
           color: UIColors.primary,
           margin: 0,
           lineHeight: 1.4,
@@ -46,7 +46,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '1.4rem',
+          fontSize: '2.8rem',
           color: UIColors.highlight,
           margin: 0,
           lineHeight: 1.4,
@@ -60,7 +60,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.4rem',
+          fontSize: '0.75rem',
           color: UIColors.dim,
           margin: 0,
           marginBottom: '4rem',
@@ -73,7 +73,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       <p
         style={{
           fontFamily: UI_FONT,
-          fontSize: '0.45rem',
+          fontSize: '0.85rem',
           color: UIColors.primary,
           margin: 0,
           textAlign: 'center',
