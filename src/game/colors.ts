@@ -11,3 +11,12 @@ export const Colors = {
   quantumWave: '#00E5CC',
   quantumSuboptimal: '#FFC04D',
 } as const;
+
+export const UIColors = {
+  bg: '#0a0a0a',
+  primary: '#e0e0e0',
+  dim: '#707070',
+  highlight: '#ffffff',
+} as const;
+
+export const UI_FONT = '"Press Start 2P", monospace';
