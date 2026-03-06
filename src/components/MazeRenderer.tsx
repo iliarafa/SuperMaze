@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { MazeData } from '../game/maze';
 import { cellIndex, Direction } from '../game/maze';
-import { Colors } from '../game/colors';
+import { Colors, UIColors, UI_FONT } from '../game/colors';
 import type { ClassicalAgentState } from '../game/classicalAgent';
 import { moveAgent } from '../game/classicalAgent';
 import { drawClassicalAgent } from '../game/agentRenderer';
@@ -415,14 +415,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRende
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleKeyDown]);
 
-  const font =
-    '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif';
-
-  const headerColor =
-    headerText === 'human' ? Colors.classicalPath
-    : headerText === 'quantum' ? Colors.quantumWave
-    : headerText === 'human is quantum' ? Colors.exitNode
-    : Colors.classicalPath;
+  const font = UI_FONT;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -430,10 +423,10 @@ export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRende
         <div
           style={{
             fontFamily: font,
-            fontSize: '1.2rem',
-            fontWeight: 200,
+            fontSize: '0.6rem',
+            fontWeight: 400,
             letterSpacing: '0.15em',
-            color: headerColor,
+            color: UIColors.highlight,
             textTransform: 'uppercase',
             marginBottom: '0.75rem',
           }}
@@ -451,33 +444,33 @@ export function MazeRenderer({ maze, agentState, quantumState, mode }: MazeRende
             flexWrap: 'wrap',
             justifyContent: 'center',
             fontFamily: font,
-            fontSize: '0.8rem',
-            fontWeight: 300,
-            color: Colors.textPrimary,
+            fontSize: '0.35rem',
+            fontWeight: 400,
+            color: UIColors.primary,
             letterSpacing: '0.05em',
           }}
         >
           <span>
             Your path:{' '}
-            <strong style={{ color: Colors.classicalPath, fontWeight: 500 }}>
+            <strong style={{ color: Colors.classicalPath, fontWeight: 400 }}>
               {comparisonData.playerPathLength}
             </strong>
           </span>
           <span>
             Optimal:{' '}
-            <strong style={{ color: Colors.exitNode, fontWeight: 500 }}>
+            <strong style={{ color: Colors.exitNode, fontWeight: 400 }}>
               {comparisonData.optimalLength}
             </strong>
           </span>
           <span>
             Moves:{' '}
-            <strong style={{ fontWeight: 500 }}>
+            <strong style={{ fontWeight: 400 }}>
               {comparisonData.playerMoves}
             </strong>
           </span>
           <span>
             Dead ends:{' '}
-            <strong style={{ fontWeight: 500 }}>
+            <strong style={{ fontWeight: 400 }}>
               {comparisonData.deadEnds}
             </strong>
           </span>
