@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { Direction } from '../game/maze';
-import { UIColors } from '../game/colors';
+import { Colors } from '../game/colors';
 
 interface SwipePadProps {
   onDirection: (dir: number) => void;
@@ -124,9 +124,8 @@ export function SwipePad({ onDirection }: SwipePadProps) {
         width: PAD_SIZE,
         height: PAD_SIZE,
         borderRadius: '50%',
-        border: `2px solid ${UIColors.dim}`,
-        boxShadow: `0 0 12px rgba(30, 122, 158, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.5)`,
-        background: 'radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%)',
+        border: 'none',
+        background: 'transparent',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -147,10 +146,10 @@ export function SwipePad({ onDirection }: SwipePadProps) {
       >
         <path
           d={`M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 1 0 ${x2} ${y2} Z`}
-          fill="#FFD700"
+          fill={Colors.wall}
         />
         {/* Eye */}
-        <circle cx={cx + 4} cy={cy - 8} r={2.5} fill="#0a0a0a" />
+        <circle cx={cx + 4} cy={cy - 8} r={2.5} fill={Colors.background} />
       </svg>
     </div>
   );
