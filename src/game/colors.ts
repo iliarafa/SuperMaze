@@ -7,6 +7,8 @@ export const Colors = {
   classicalPath: '#FFD700',
   classicalBacktrack: '#996515',
   classicalCursor: '#FF2D2D',
+  optimalPath: '#7AFF83',
+  overlapPath: '#00E5CC',
   accent: '#6EC6E6',
   textPrimary: '#B8D4E8',
   quantumWave: '#00E5CC',

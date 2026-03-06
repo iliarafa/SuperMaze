@@ -417,12 +417,28 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           if (qState && agent) {
             const half = cellSize / 2;
             // Draw optimal path (wider, underneath)
-            drawPath(ctx, qState.optimalPath, Colors.exitNode, cellSize, half, 1, 0.5, 0.25);
+            drawPath(ctx, qState.optimalPath, Colors.optimalPath, cellSize, half, 1, 0.7, 0.25);
             // Draw player's active path on top (thinner)
             const activeCells: [number, number][] = agent.path
               .filter(c => c.state === 'active')
               .map(c => [c.x, c.y]);
             drawPath(ctx, activeCells, Colors.classicalPath, cellSize, half, 1, 1, 0.12);
+            // Draw overlap segments where player matched optimal
+            const optimalSet = new Set(qState.optimalPath.map(([x, y]) => `${x},${y}`));
+            const overlapRuns: [number, number][][] = [];
+            let currentRun: [number, number][] = [];
+            for (const cell of activeCells) {
+              if (optimalSet.has(`${cell[0]},${cell[1]}`)) {
+                currentRun.push(cell);
+              } else {
+                if (currentRun.length >= 2) overlapRuns.push(currentRun);
+                currentRun = [];
+              }
+            }
+            if (currentRun.length >= 2) overlapRuns.push(currentRun);
+            for (const run of overlapRuns) {
+              drawPath(ctx, run, Colors.overlapPath, cellSize, half, 1, 1, 0.12);
+            }
           }
         }
       } else {
@@ -474,12 +490,10 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: '2.5rem',
-        minHeight: '100%',
       }}
     >
-      {/* Header */}
+      {/* Header — fixed height for 2 lines to prevent layout shift */}
       <div
         style={{
           fontFamily: UI_FONT,
@@ -488,6 +502,9 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           letterSpacing: '0.15em',
           color: UIColors.highlight,
           textTransform: 'uppercase',
+          minHeight: '4.8rem',
+          display: 'flex',
+          alignItems: 'center',
         }}
       >
         {mode === 'race' ? headerText : 'observe'}
@@ -496,60 +513,71 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
       {/* Bordered canvas frame */}
       <div
         style={{
-          border: `1px solid ${UIColors.primary}`,
+          border: `1px solid ${Colors.wall}`,
           lineHeight: 0,
         }}
       >
         <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
       </div>
 
-      {/* Swipe pad */}
-      {joystickEnabled && mode === 'race' && !comparisonData && (
-        <SwipePad onDirection={handlePadDirection} />
-      )}
+      {/* Bottom slot — fixed height to keep maze position stable across states */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 110,
+        }}
+      >
+        {/* Swipe pad */}
+        {joystickEnabled && mode === 'race' && !comparisonData && (
+          <SwipePad onDirection={handlePadDirection} />
+        )}
 
-      {/* Comparison stats */}
-      {comparisonData && (
-        <div
-          style={{
-            border: `1px solid ${UIColors.primary}`,
-            padding: '1rem 1.2rem',
-            display: 'flex',
-            gap: '1.5rem',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            fontFamily: UI_FONT,
-            fontSize: '0.6rem',
-            fontWeight: 400,
-            color: UIColors.primary,
-            letterSpacing: '0.05em',
-            lineHeight: 1.8,
-          }}
-        >
-          <span>
-            Your path:{' '}
-            <span style={{ color: Colors.classicalPath }}>
-              {comparisonData.playerPathLength}
+        {/* Comparison stats */}
+        {comparisonData && (
+          <div
+            style={{
+              border: `1px solid ${UIColors.primary}`,
+              padding: '1rem 1.2rem',
+              display: 'flex',
+              gap: '1.5rem',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              fontFamily: UI_FONT,
+              fontSize: '0.6rem',
+              fontWeight: 400,
+              color: UIColors.primary,
+              letterSpacing: '0.05em',
+              lineHeight: 1.8,
+            }}
+          >
+            <span>
+              Your path:{' '}
+              <span style={{ color: Colors.classicalPath }}>
+                {comparisonData.playerPathLength}
+              </span>
             </span>
-          </span>
-          <span>
-            Optimal:{' '}
-            <span style={{ color: Colors.exitNode }}>
-              {comparisonData.optimalLength}
+            <span>
+              Optimal:{' '}
+              <span style={{ color: Colors.optimalPath }}>
+                {comparisonData.optimalLength}
+              </span>
             </span>
-          </span>
-          <span>
-            Moves:{' '}
-            <span>{comparisonData.playerMoves}</span>
-          </span>
-          <span>
-            Dead ends:{' '}
-            <span>{comparisonData.deadEnds}</span>
-          </span>
-        </div>
-      )}
+            <span>
+              Moves:{' '}
+              <span>{comparisonData.playerMoves}</span>
+            </span>
+            <span>
+              Dead ends:{' '}
+              <span>{comparisonData.deadEnds}</span>
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/* Back button */}
+      {/* Back button — outside the fixed slot */}
       {onBack && (
         <button
           onClick={onBack}
