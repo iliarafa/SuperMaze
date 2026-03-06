@@ -107,3 +107,74 @@ export function playSound(type: SoundType): void {
   if (!getSettings().soundEnabled) return;
   sounds[type]();
 }
+
+let waveExpandNodes: { oscs: OscillatorNode[]; gains: GainNode[] } | null = null;
+
+export function startWaveExpand(): void {
+  if (!getSettings().soundEnabled) return;
+  if (waveExpandNodes) return;
+
+  const ac = getAudioContext();
+  const master = ac.createGain();
+  master.gain.setValueAtTime(0.06, ac.currentTime);
+  master.connect(ac.destination);
+
+  // Base hum
+  const base = ac.createOscillator();
+  base.type = 'sine';
+  base.frequency.setValueAtTime(80, ac.currentTime);
+  const baseGain = ac.createGain();
+  baseGain.gain.setValueAtTime(0.5, ac.currentTime);
+  base.connect(baseGain);
+  baseGain.connect(master);
+  base.start();
+
+  // Sweep tone with frequency LFO (200-400 Hz over ~8s cycle)
+  const sweep = ac.createOscillator();
+  sweep.type = 'sine';
+  sweep.frequency.setValueAtTime(300, ac.currentTime);
+  const freqLfo = ac.createOscillator();
+  freqLfo.type = 'triangle';
+  freqLfo.frequency.setValueAtTime(0.125, ac.currentTime);
+  const freqLfoGain = ac.createGain();
+  freqLfoGain.gain.setValueAtTime(100, ac.currentTime);
+  freqLfo.connect(freqLfoGain);
+  freqLfoGain.connect(sweep.frequency);
+  freqLfo.start();
+
+  // Tremolo on sweep volume
+  const tremolo = ac.createOscillator();
+  tremolo.type = 'sine';
+  tremolo.frequency.setValueAtTime(2.5, ac.currentTime);
+  const tremoloGain = ac.createGain();
+  tremoloGain.gain.setValueAtTime(0.3, ac.currentTime);
+  const sweepGain = ac.createGain();
+  sweepGain.gain.setValueAtTime(0.5, ac.currentTime);
+  tremolo.connect(tremoloGain);
+  tremoloGain.connect(sweepGain.gain);
+  tremolo.start();
+
+  sweep.connect(sweepGain);
+  sweepGain.connect(master);
+  sweep.start();
+
+  waveExpandNodes = {
+    oscs: [base, sweep, freqLfo, tremolo],
+    gains: [baseGain, sweepGain, master],
+  };
+}
+
+export function stopWaveExpand(): void {
+  if (!waveExpandNodes) return;
+  const ac = getAudioContext();
+  for (const g of waveExpandNodes.gains) {
+    g.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3);
+  }
+  const nodes = waveExpandNodes;
+  waveExpandNodes = null;
+  setTimeout(() => {
+    for (const o of nodes.oscs) {
+      try { o.stop(); } catch (_) { /* already stopped */ }
+    }
+  }, 350);
+}

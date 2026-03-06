@@ -23,3 +23,4 @@ export const UIColors = {
 } as const;
 
 export const UI_FONT = '"Press Start 2P", monospace';
+export const UI_BODY_FONT = '"Share Tech Mono", monospace';

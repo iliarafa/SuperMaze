@@ -21,7 +21,7 @@ import {
 import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
 import { SwipePad } from './SwipePad';
-import { playSound } from '../game/audio';
+import { playSound, startWaveExpand, stopWaveExpand } from '../game/audio';
 import { useTiltMovement } from '../game/tiltInput';
 
 type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
@@ -170,6 +170,22 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
   const racePhaseRef = useRef<RacePhase>('exploring');
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [headerText, setHeaderText] = useState<string>('human');
+  const [displayText, setDisplayText] = useState<string>('human');
+
+  useEffect(() => {
+    if (!headerText.includes(' is ')) {
+      setDisplayText(headerText);
+      return;
+    }
+    setDisplayText('');
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayText(headerText.slice(0, i));
+      if (i >= headerText.length) clearInterval(id);
+    }, 70);
+    return () => clearInterval(id);
+  }, [headerText]);
 
   // Keep refs in sync
   agentRef.current = agentState;
@@ -209,6 +225,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           const rect = canvas.getBoundingClientRect();
           const fingerX = touch.clientX - rect.left;
           const fingerY = touch.clientY - rect.top;
+          stopWaveExpand();
           startCharge(qState, performance.now(), [fingerX, fingerY]);
         }
       }
@@ -398,6 +415,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
         if (racePhaseRef.current === 'quantumReveal') {
           const qState = quantumRef.current;
           if (qState && expansionStartRef.current !== null) {
+            startWaveExpand();
             tickExpansion(qState, now - expansionStartRef.current);
             drawQuantumAgent(ctx, qState, cellSize, now);
 
@@ -405,6 +423,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
             if (qState.expandQueue.length === 0) {
               qState.collapsedPath = [...qState.optimalPath];
               qState.phase = 'finished';
+              stopWaveExpand();
               playSound('quantum');
               racePhaseRef.current = 'comparison';
               if (agent) {
@@ -466,6 +485,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
             if (expansionStartRef.current === null) {
               expansionStartRef.current = now;
             }
+            startWaveExpand();
             tickExpansion(qState, now - expansionStartRef.current);
           }
 
@@ -498,6 +518,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('keydown', handleKeyDown);
+      stopWaveExpand();
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleKeyDown, tiltIsActive]);
 
@@ -524,7 +545,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           alignItems: 'center',
         }}
       >
-        {mode === 'race' ? headerText : 'observe'}
+        {mode === 'race' ? displayText : 'observe'}
       </div>
 
       {/* Bordered canvas frame */}
