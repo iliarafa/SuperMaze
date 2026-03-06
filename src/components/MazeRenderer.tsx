@@ -20,8 +20,24 @@ import {
 import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
 import { SwipePad } from './SwipePad';
+import { playSound } from '../game/audio';
 
 type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
+
+function moveWithSound(agent: ClassicalAgentState, maze: MazeData, direction: number): boolean {
+  const activeCount = agent.path.filter(c => c.state === 'active').length;
+  const moved = moveAgent(agent, maze, direction);
+  if (!moved) return false;
+
+  if (agent.finished) {
+    playSound('win');
+  } else {
+    const newActiveCount = agent.path.filter(c => c.state === 'active').length;
+    // If active count didn't increase by 1, cells were marked as backtracked
+    playSound(newActiveCount > activeCount ? 'move' : 'backtrack');
+  }
+  return true;
+}
 
 interface ComparisonData {
   playerMoves: number;
@@ -217,6 +233,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
     // Quantum collapse on release (observe mode only)
     if (modeRef.current === 'observe' && qState && qState.phase === 'charging') {
       collapse(qState, performance.now());
+      playSound('quantum');
       touchStartRef.current = null;
       return;
     }
@@ -242,7 +259,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
     // Try swipe first
     const swipeDir = detectSwipeDirection(start.x, start.y, endX, endY);
     if (swipeDir !== null) {
-      moveAgent(agent, m, swipeDir);
+      moveWithSound(agent, m, swipeDir);
       touchStartRef.current = null;
       return;
     }
@@ -273,7 +290,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
         else if (dy === -1) dir = Direction.N;
 
         if (dir !== null) {
-          moveAgent(agent, m, dir);
+          moveWithSound(agent, m, dir);
         }
       }
     }
@@ -298,7 +315,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
     }
 
     e.preventDefault();
-    moveAgent(agent, m, dir);
+    moveWithSound(agent, m, dir);
   }, []);
 
   // Swipe pad direction handler
@@ -307,7 +324,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
     const agent = agentRef.current;
     const m = mazeRef.current;
     if (!agent || !m) return;
-    moveAgent(agent, m, dir);
+    moveWithSound(agent, m, dir);
   }, []);
 
   // Set up canvas, touch events, keyboard events, and rAF loop
@@ -377,6 +394,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
             if (qState.expandQueue.length === 0) {
               qState.collapsedPath = [...qState.optimalPath];
               qState.phase = 'finished';
+              playSound('quantum');
               racePhaseRef.current = 'comparison';
               if (agent) {
                 const activePath = agent.path.filter(c => c.state === 'active');
@@ -486,7 +504,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
       </div>
 
       {/* Swipe pad */}
-      {joystickEnabled && mode === 'race' && (
+      {joystickEnabled && mode === 'race' && !comparisonData && (
         <SwipePad onDirection={handlePadDirection} />
       )}
 

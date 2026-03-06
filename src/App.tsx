@@ -17,7 +17,7 @@ type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'settings' | 'game';
 function App() {
   const [screen, setScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<GameMode>('race');
-  const maze = useMemo(() => generateMaze(25, 25, 42), []);
+  const maze = useMemo(() => generateMaze(25, 25, Date.now()), []);
   const agentState = useRef(createAgentState(maze));
   const quantumState = useRef<QuantumAgentState | null>(null);
 
