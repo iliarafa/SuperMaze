@@ -44,7 +44,6 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
       <ModeCard
         title="Race"
         description="Find the shortest path. Then watch the quantum solution unfold."
-        color={UIColors.primary}
         available
         onSelect={handleRace}
       />
@@ -52,7 +51,6 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
       <ModeCard
         title="Observe & Collapse"
         description="Guide a quantum wave. Hold to charge, release to collapse."
-        color={UIColors.primary}
         available
         onSelect={handleObserve}
       />
@@ -101,13 +99,11 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onBack }: ModeSelectProp
 function ModeCard({
   title,
   description,
-  color,
   available,
   onSelect,
 }: {
   title: string;
   description: string;
-  color: string;
   available: boolean;
   onSelect: () => void;
 }) {
