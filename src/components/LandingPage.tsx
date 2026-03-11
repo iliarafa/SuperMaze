@@ -513,14 +513,14 @@ export function LandingPage({ onStart }: LandingPageProps) {
           ref={title1Ref}
           style={{
             fontFamily: UI_FONT,
-            fontSize: '2.4rem',
+            fontSize: '2.8rem',
             color: UIColors.primary,
             margin: 0,
             lineHeight: 1.4,
             textAlign: 'center',
           }}
         >
-          LOV'S
+          LOVS
         </p>
 
         <p
