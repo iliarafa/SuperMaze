@@ -6,11 +6,12 @@ export type GameMode = 'race' | 'observe';
 interface ModeSelectProps {
   onSelectMode: (mode: GameMode) => void;
   onHowToPlay: () => void;
+  onGrover: () => void;
   onSettings: () => void;
   onBack: () => void;
 }
 
-export function ModeSelect({ onSelectMode, onHowToPlay, onSettings, onBack }: ModeSelectProps) {
+export function ModeSelect({ onSelectMode, onHowToPlay, onGrover, onSettings, onBack }: ModeSelectProps) {
   const handleRace = useCallback(() => onSelectMode('race'), [onSelectMode]);
 
   return (
@@ -29,6 +30,7 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onSettings, onBack }: Mo
     >
       <MenuButton label="ENTER MAZE" onSelect={handleRace} />
       <MenuButton label="HOW TO PLAY" onSelect={onHowToPlay} />
+      <MenuButton label="GROVER'S ALGORITHM" onSelect={onGrover} />
       <MenuButton label="SETTINGS" onSelect={onSettings} />
 
       <button

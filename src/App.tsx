@@ -8,11 +8,12 @@ import { LandingPage } from './components/LandingPage';
 import { ModeSelect } from './components/ModeSelect';
 import type { GameMode } from './components/ModeSelect';
 import { HowToPlay } from './components/HowToPlay';
+import { GroverExplainer } from './components/GroverExplainer';
 import { Settings } from './components/Settings';
 import { UIColors } from './game/colors';
 import { useSettings } from './game/settings';
 
-type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'settings' | 'game';
+type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'grover' | 'settings' | 'game';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing');
@@ -26,6 +27,7 @@ function App() {
 
   const goToModeSelect = useCallback(() => setScreen('modeSelect'), []);
   const goToHowToPlay = useCallback(() => setScreen('howToPlay'), []);
+  const goToGrover = useCallback(() => setScreen('grover'), []);
   const goToSettings = useCallback(() => setScreen('settings'), []);
   const goToLanding = useCallback(() => setScreen('landing'), []);
 
@@ -54,6 +56,7 @@ function App() {
       <ModeSelect
         onSelectMode={handleSelectMode}
         onHowToPlay={goToHowToPlay}
+        onGrover={goToGrover}
         onSettings={goToSettings}
         onBack={goToLanding}
       />
@@ -62,6 +65,10 @@ function App() {
 
   if (screen === 'howToPlay') {
     return <HowToPlay onBack={goToModeSelect} />;
+  }
+
+  if (screen === 'grover') {
+    return <GroverExplainer onBack={goToModeSelect} />;
   }
 
   if (screen === 'settings') {
