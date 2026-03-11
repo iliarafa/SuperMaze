@@ -63,7 +63,8 @@ interface MazeRendererProps {
 
 function computeLayout(maze: MazeData) {
   const dpr = window.devicePixelRatio || 1;
-  const containerSize = Math.min(window.innerWidth, window.innerHeight) - 32;
+  const maxSize = window.innerWidth >= 768 ? 600 : Infinity;
+  const containerSize = Math.min(window.innerWidth, window.innerHeight, maxSize) - 32;
   const cellSize = Math.floor(containerSize / maze.width);
   const mazePixelSize = cellSize * maze.width;
   return { dpr, cellSize, mazePixelSize };
