@@ -48,6 +48,133 @@ export function bfsPath(maze: MazeData): [number, number][] {
 }
 
 /**
+ * BFS biased toward the player's cells. When multiple neighbors are valid,
+ * directions leading into the player's cell set are explored first so that
+ * the reconstructed shortest path aligns with the player's route.
+ */
+export function bfsPathBiased(
+  maze: MazeData,
+  playerCells: Set<string>
+): [number, number][] {
+  const { width, height, start, exit } = maze;
+  const visited = new Uint8Array(width * height);
+  const parent = new Map<number, { from: number; x: number; y: number }>();
+  const queue: [number, number][] = [start];
+  const si = cellIndex(width, start[0], start[1]);
+  visited[si] = 1;
+
+  while (queue.length > 0) {
+    const [cx, cy] = queue.shift()!;
+    const ci = cellIndex(width, cx, cy);
+    if (cx === exit[0] && cy === exit[1]) break;
+
+    const cell = maze.cells[ci];
+    // Sort directions so player-cell neighbors come first
+    const dirs = [...AllDirections].sort((a, b) => {
+      const [adx, ady] = DirectionDelta[a];
+      const [bdx, bdy] = DirectionDelta[b];
+      const aInPlayer = playerCells.has(`${cx + adx},${cy + ady}`) ? 0 : 1;
+      const bInPlayer = playerCells.has(`${cx + bdx},${cy + bdy}`) ? 0 : 1;
+      return aInPlayer - bInPlayer;
+    });
+    for (const dir of dirs) {
+      if (!(cell & dir)) continue;
+      const [dx, dy] = DirectionDelta[dir];
+      const nx = cx + dx;
+      const ny = cy + dy;
+      const ni = cellIndex(width, nx, ny);
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height && !visited[ni]) {
+        visited[ni] = 1;
+        parent.set(ni, { from: ci, x: cx, y: cy });
+        queue.push([nx, ny]);
+      }
+    }
+  }
+
+  const path: [number, number][] = [];
+  let cur = cellIndex(width, exit[0], exit[1]);
+  path.push(exit);
+  while (cur !== si) {
+    const p = parent.get(cur)!;
+    path.push([p.x, p.y]);
+    cur = p.from;
+  }
+  path.reverse();
+  return path;
+}
+
+const MAX_ALT_PATHS = 10;
+
+/**
+ * Find all shortest paths from start to exit (up to MAX_ALT_PATHS).
+ * Uses BFS with multi-parent tracking, then DFS enumeration on the parent DAG.
+ */
+export function findAllShortestPaths(
+  maze: MazeData,
+  maxPaths: number = MAX_ALT_PATHS
+): [number, number][][] {
+  const { width, height, start, exit } = maze;
+  const totalCells = width * height;
+  const dist = new Int32Array(totalCells).fill(-1);
+  const allParents = new Map<number, number[]>();
+  const si = cellIndex(width, start[0], start[1]);
+  const ei = cellIndex(width, exit[0], exit[1]);
+  dist[si] = 0;
+  const queue: number[] = [si];
+
+  while (queue.length > 0) {
+    const ci = queue.shift()!;
+    const cx = ci % width;
+    const cy = (ci - cx) / width;
+    const cell = maze.cells[ci];
+
+    for (const dir of AllDirections) {
+      if (!(cell & dir)) continue;
+      const [dx, dy] = DirectionDelta[dir];
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      const ni = cellIndex(width, nx, ny);
+      const nd = dist[ci] + 1;
+      if (dist[ni] === -1) {
+        dist[ni] = nd;
+        allParents.set(ni, [ci]);
+        queue.push(ni);
+      } else if (dist[ni] === nd) {
+        allParents.get(ni)!.push(ci);
+      }
+    }
+  }
+
+  if (dist[ei] === -1) return [];
+
+  // DFS backwards from exit through parent DAG
+  const results: [number, number][][] = [];
+  const stack: { cell: number; path: number[] }[] = [{ cell: ei, path: [ei] }];
+
+  while (stack.length > 0 && results.length < maxPaths) {
+    const { cell, path } = stack.pop()!;
+    if (cell === si) {
+      const coords: [number, number][] = [];
+      for (let i = path.length - 1; i >= 0; i--) {
+        const c = path[i];
+        coords.push([c % width, (c - (c % width)) / width]);
+      }
+      results.push(coords);
+      continue;
+    }
+    const parents = allParents.get(cell);
+    if (parents) {
+      for (const p of parents) {
+        stack.push({ cell: p, path: [...path, p] });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
  * BFS from all optimal-path cells outward. Returns Map<"x,y", distance>.
  * Distance 0 = on optimal path.
  */

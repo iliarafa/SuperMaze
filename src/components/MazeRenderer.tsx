@@ -17,6 +17,8 @@ import {
   tickTravel,
   COLLAPSE_DURATION,
   TRAVEL_RATE,
+  bfsPathBiased,
+  findAllShortestPaths,
 } from '../game/quantumAgent';
 import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
@@ -48,6 +50,7 @@ interface ComparisonData {
   deadEnds: number;
   playerTime: number;
   quantumTime: number;
+  altPaths: [number, number][][];
 }
 
 interface MazeRendererProps {
@@ -171,6 +174,16 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
   const expansionStartRef = useRef<number | null>(null);
   const racePhaseRef = useRef<RacePhase>('exploring');
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
+  const [showAltPaths, _setShowAltPaths] = useState(false);
+  const showAltPathsRef = useRef(false);
+  const altPathsRef = useRef<[number, number][][]>([]);
+  const setShowAltPaths = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
+    _setShowAltPaths(prev => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      showAltPathsRef.current = next;
+      return next;
+    });
+  }, []);
   const [headerText, setHeaderText] = useState<string>('human');
   const [displayText, setDisplayText] = useState<string>('human');
 
@@ -436,6 +449,26 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
                 const optimalLen = qState.optimalPath.length - 1;
                 const playerTime = (agent.endTime ?? 0) - (agent.startTime ?? 0);
                 const quantumTime = optimalLen * TRAVEL_RATE;
+
+                const isOptimal = playerLen === optimalLen;
+                let altPaths: [number, number][][] = [];
+
+                if (isOptimal) {
+                  // Find all shortest paths and bias displayed one toward player's route
+                  const allPaths = findAllShortestPaths(mazeRef.current, 10);
+                  if (allPaths.length > 1) {
+                    const playerCells = new Set(activePath.map(c => `${c.x},${c.y}`));
+                    qState.optimalPath = bfsPathBiased(mazeRef.current, playerCells);
+                    qState.collapsedPath = [...qState.optimalPath];
+
+                    const displayedKey = qState.optimalPath.map(([x, y]) => `${x},${y}`).join('|');
+                    altPaths = allPaths.filter(
+                      p => p.map(([x, y]) => `${x},${y}`).join('|') !== displayedKey
+                    );
+                  }
+                }
+
+                altPathsRef.current = altPaths;
                 setComparisonData({
                   playerMoves: agent.moveCount,
                   playerPathLength: playerLen,
@@ -443,8 +476,9 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
                   deadEnds: agent.deadEnds.size,
                   playerTime,
                   quantumTime,
+                  altPaths,
                 });
-                const isOptimal = playerLen === optimalLen;
+                setShowAltPaths(false);
                 const isFasterThanQuantum = isOptimal && playerTime <= quantumTime;
                 setHeaderText(isFasterThanQuantum ? 'quantum is human' : isOptimal ? 'human is quantum' : 'human is human');
               }
@@ -456,6 +490,12 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           const qState = quantumRef.current;
           if (qState && agent) {
             const half = cellSize / 2;
+            // Draw alt paths underneath everything if toggled
+            if (showAltPathsRef.current && altPathsRef.current.length > 0) {
+              for (const altPath of altPathsRef.current) {
+                drawPath(ctx, altPath, Colors.altPath, cellSize, half, 1, 0.4, 0.15);
+              }
+            }
             // Draw optimal path (wider, underneath)
             drawPath(ctx, qState.optimalPath, Colors.optimalPath, cellSize, half, 1, 0.7, 0.25);
             // Draw player's active path on top (thinner)
@@ -532,7 +572,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '2.5rem',
+        gap: '1rem',
       }}
     >
       {/* Header — fixed height for 2 lines to prevent layout shift */}
@@ -714,6 +754,27 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
             }}
           >
             retry
+          </button>
+        )}
+        {comparisonData && comparisonData.altPaths.length > 0 && (
+          <button
+            onClick={() => setShowAltPaths(prev => !prev)}
+            style={{
+              background: 'none',
+              border: `1px solid ${showAltPaths ? Colors.altPath : UIColors.dim}`,
+              borderRadius: 0,
+              color: showAltPaths ? Colors.altPath : UIColors.dim,
+              fontFamily: UI_FONT,
+              fontSize: '0.55rem',
+              fontWeight: 400,
+              letterSpacing: '0.08em',
+              padding: '0.4rem 0.7rem',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              textTransform: 'uppercase',
+            }}
+          >
+            alt paths: {comparisonData.altPaths.length}
           </button>
         )}
       </div>

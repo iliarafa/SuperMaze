@@ -80,7 +80,7 @@ function App() {
       style={{
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         minHeight: '100vh',
         backgroundColor: UIColors.bg,
         padding: '1.5rem',

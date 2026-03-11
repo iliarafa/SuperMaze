@@ -13,6 +13,7 @@ export const Colors = {
   textPrimary: '#B8D4E8',
   quantumWave: '#00E5CC',
   quantumSuboptimal: '#FFC04D',
+  altPath: '#C77DFF',
 } as const;
 
 export const UIColors = {
