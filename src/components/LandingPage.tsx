@@ -40,7 +40,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
           textAlign: 'center',
         }}
       >
-        SUPER
+        LOV'S
       </p>
 
       <p

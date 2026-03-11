@@ -30,7 +30,7 @@ export function ModeSelect({ onSelectMode, onHowToPlay, onGrover, onSettings, on
     >
       <MenuButton label="ENTER MAZE" onSelect={handleRace} />
       <MenuButton label="HOW TO PLAY" onSelect={onHowToPlay} />
-      <MenuButton label="GROVER'S ALGORITHM" onSelect={onGrover} />
+      <MenuButton label="LOV'S ALGORITHM" onSelect={onGrover} />
       <MenuButton label="SETTINGS" onSelect={onSettings} />
 
       <button

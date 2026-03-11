@@ -55,6 +55,14 @@ export function GroverExplainer({ onBack }: GroverExplainerProps) {
         Grover's Algorithm
       </h2>
 
+      <Section title="Lov Grover">
+        In 1996, Indian-American computer scientist Lov Grover, working at Bell
+        Labs, discovered a quantum algorithm that fundamentally changed how we
+        think about search. He showed that a quantum computer could find a needle
+        in a haystack quadratically faster than any classical approach — a result
+        that remains one of the cornerstones of quantum computing.
+      </Section>
+
       <Section title="The Search Problem">
         Imagine searching for one name in a phone book with 1,000,000 entries. A
         classical computer checks them one by one — in the worst case, all
