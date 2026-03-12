@@ -610,6 +610,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: 110,
+          marginTop: 20,
         }}
       >
         {/* Swipe pad (also shown as fallback when tilt is enabled but not receiving events) */}
@@ -717,7 +718,7 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
       </div>
 
       {/* Bottom buttons — outside the fixed slot */}
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginTop: 12 }}>
         {onBack && (
           <button
             onClick={onBack}
