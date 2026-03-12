@@ -3,9 +3,9 @@ import { Direction } from './maze';
 
 const DEADZONE_DEG = 8;
 const MIN_ANGLE_DEG = 10;
-const MAX_ANGLE_DEG = 40;
-const SLOWEST_INTERVAL_MS = 350;
-const FASTEST_INTERVAL_MS = 80;
+const MAX_ANGLE_DEG = 50;
+const SLOWEST_INTERVAL_MS = 400;
+const FASTEST_INTERVAL_MS = 150;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
