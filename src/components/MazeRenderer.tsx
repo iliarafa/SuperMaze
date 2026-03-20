@@ -24,7 +24,7 @@ import { drawQuantumAgent, drawPath } from '../game/quantumRenderer';
 import type { GameMode } from './ModeSelect';
 import { SwipePad } from './SwipePad';
 import { playSound, startWaveExpand, stopWaveExpand } from '../game/audio';
-import { useTiltMovement, requestTiltPermission } from '../game/tiltInput';
+import { useTiltMovement } from '../game/tiltInput';
 
 type RacePhase = 'exploring' | 'quantumReveal' | 'comparison';
 
@@ -366,9 +366,8 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
 
   // Tilt control
   const tiltIsActive = !!(tiltEnabled && mode === 'race' && !comparisonData);
-  const { active: tiltReceiving, calibrate: calibrateTilt } = useTiltMovement(tiltIsActive, handlePadDirection);
-  // Show swipe pad as fallback if tilt is enabled but device isn't sending events
-  const showSwipePad = mode === 'race' && !comparisonData && (joystickEnabled || (tiltIsActive && !tiltReceiving));
+  useTiltMovement(tiltIsActive, handlePadDirection);
+  const showSwipePad = mode === 'race' && !comparisonData && joystickEnabled;
 
   // Set up canvas, touch events, keyboard events, and rAF loop
   useEffect(() => {
@@ -613,58 +612,8 @@ export function MazeRenderer({ maze, agentState, quantumState, mode, joystickEna
           marginTop: 20,
         }}
       >
-        {/* Swipe pad (also shown as fallback when tilt is enabled but not receiving events) */}
-        {showSwipePad && !tiltReceiving && (
+        {showSwipePad && (
           <SwipePad onDirection={handlePadDirection} />
-        )}
-
-        {/* Tilt: re-request permission button when not receiving events, calibrate when active */}
-        {tiltIsActive && !tiltReceiving && (
-          <button
-            onClick={async () => {
-              const result = await requestTiltPermission();
-              if (result === 'granted') {
-                calibrateTilt();
-              }
-            }}
-            style={{
-              background: 'none',
-              border: `1px solid ${UIColors.primary}`,
-              borderRadius: 0,
-              color: UIColors.highlight,
-              fontFamily: UI_FONT,
-              fontSize: '0.6rem',
-              fontWeight: 400,
-              letterSpacing: '0.1em',
-              padding: '0.8rem 1.5rem',
-              cursor: 'pointer',
-              WebkitTapHighlightColor: 'transparent',
-              textTransform: 'uppercase',
-            }}
-          >
-            tap to enable tilt
-          </button>
-        )}
-        {tiltIsActive && tiltReceiving && (
-          <button
-            onClick={calibrateTilt}
-            style={{
-              background: 'none',
-              border: `1px solid ${UIColors.primary}`,
-              borderRadius: 0,
-              color: UIColors.highlight,
-              fontFamily: UI_FONT,
-              fontSize: '0.6rem',
-              fontWeight: 400,
-              letterSpacing: '0.1em',
-              padding: '0.8rem 1.5rem',
-              cursor: 'pointer',
-              WebkitTapHighlightColor: 'transparent',
-              textTransform: 'uppercase',
-            }}
-          >
-            calibrate
-          </button>
         )}
 
         {/* Comparison stats */}

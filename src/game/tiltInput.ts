@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Direction } from './maze';
 
+const CALIBRATE_TILT_EVENT = 'calibrate-tilt';
+
+export function triggerCalibrateTilt() {
+  window.dispatchEvent(new CustomEvent(CALIBRATE_TILT_EVENT));
+}
+
 const DEADZONE_DEG = 8;
 const MIN_ANGLE_DEG = 10;
 const MAX_ANGLE_DEG = 50;
@@ -132,10 +138,17 @@ export function useTiltMovement(
       }
     }
 
+    function handleCalibrate() {
+      betaBaselineRef.current = null;
+      gammaBaselineRef.current = null;
+    }
+
     window.addEventListener('deviceorientation', handleOrientation);
+    window.addEventListener(CALIBRATE_TILT_EVENT, handleCalibrate);
 
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener(CALIBRATE_TILT_EVENT, handleCalibrate);
       stopTimer();
       betaBaselineRef.current = null;
       gammaBaselineRef.current = null;

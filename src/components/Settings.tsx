@@ -1,6 +1,6 @@
 import { UI_FONT, UIColors } from '../game/colors';
 import { useSettings } from '../game/settings';
-import { requestTiltPermission } from '../game/tiltInput';
+import { requestTiltPermission, triggerCalibrateTilt } from '../game/tiltInput';
 
 interface SettingsProps {
   onBack: () => void;
@@ -115,6 +115,29 @@ export function Settings({ onBack }: SettingsProps) {
           }
         }}
       />
+
+      {settings.tiltEnabled && (
+        <button
+          onClick={triggerCalibrateTilt}
+          style={{
+            background: 'none',
+            border: `1px solid ${UIColors.primary}`,
+            borderRadius: 0,
+            color: UIColors.highlight,
+            fontFamily: UI_FONT,
+            fontSize: '0.6rem',
+            fontWeight: 400,
+            letterSpacing: '0.1em',
+            padding: '0.8rem 1.5rem',
+            marginBottom: '1rem',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+            textTransform: 'uppercase',
+          }}
+        >
+          calibrate tilt
+        </button>
+      )}
 
       <ToggleRow
         label="SOUND"

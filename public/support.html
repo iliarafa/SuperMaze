@@ -4,36 +4,70 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Support - Lov's Maze</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Share Tech Mono', monospace;
       max-width: 680px;
       margin: 0 auto;
       padding: 2rem 1.5rem;
-      color: #222;
-      line-height: 1.6;
-      background: #fafafa;
+      color: #B8D4E8;
+      line-height: 1.7;
+      background: #050A14;
     }
-    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.1rem; margin-top: 2rem; }
-    .updated { color: #666; font-size: 0.85rem; margin-bottom: 2rem; }
-    a { color: #1E7A9E; }
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1rem;
+      color: #ffffff;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      color: #6EC6E6;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .subtitle {
+      color: #707070;
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+    }
+    a { color: #00E5CC; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { color: #e0e0e0; }
     .contact-box {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
+      border: 1px solid #1E7A9E;
       padding: 1.5rem;
       margin-top: 1.5rem;
     }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 2rem;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.45rem;
+      color: #707070;
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .back-link:hover { color: #e0e0e0; }
   </style>
 </head>
 <body>
+  <a class="back-link" href="./">&larr; back</a>
   <h1>Support</h1>
-  <p class="updated">Lov's Maze</p>
+  <p class="subtitle">Lov's Maze</p>
 
   <p>Thank you for playing Lov's Maze! If you need help or have feedback, we're here for you.</p>
 
-  <h2>Frequently Asked Questions</h2>
+  <h2>FAQ</h2>
 
   <p><strong>How do I play?</strong><br>
   Choose "Race" mode to guide your agent through the maze using swipe or tilt controls. The quantum agent will then solve the same maze using Grover's algorithm. Compare your performance!</p>

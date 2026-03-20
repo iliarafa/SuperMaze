@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { generateMaze } from './game/maze';
 import { createAgentState } from './game/classicalAgent';
 import { createQuantumState } from './game/quantumAgent';
@@ -12,6 +12,7 @@ import { GroverExplainer } from './components/GroverExplainer';
 import { Settings } from './components/Settings';
 import { UIColors } from './game/colors';
 import { useSettings } from './game/settings';
+import { startBackgroundMusic, pauseBackgroundMusic, resumeBackgroundMusic, syncBackgroundMusic } from './game/backgroundMusic';
 
 type Screen = 'landing' | 'modeSelect' | 'howToPlay' | 'grover' | 'settings' | 'game';
 
@@ -24,6 +25,22 @@ function App() {
   const quantumState = useRef<QuantumAgentState | null>(null);
 
   const [settings] = useSettings();
+
+  useEffect(() => {
+    startBackgroundMusic();
+  }, []);
+
+  useEffect(() => {
+    if (screen === 'game') {
+      pauseBackgroundMusic();
+    } else {
+      resumeBackgroundMusic();
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    syncBackgroundMusic(settings.soundEnabled);
+  }, [settings.soundEnabled]);
 
   const goToModeSelect = useCallback(() => setScreen('modeSelect'), []);
   const goToHowToPlay = useCallback(() => setScreen('howToPlay'), []);
