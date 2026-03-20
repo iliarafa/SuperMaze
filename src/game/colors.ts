@@ -19,7 +19,7 @@ export const Colors = {
 export const UIColors = {
   bg: '#0a0a0a',
   primary: '#e0e0e0',
-  dim: '#707070',
+  dim: '#a0a0a0',
   highlight: '#ffffff',
 } as const;
 

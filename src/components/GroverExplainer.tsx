@@ -141,12 +141,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: '1.5rem', maxWidth: '360px', alignSelf: 'center', width: '100%' }}>
+    <div style={{ marginBottom: '2rem', maxWidth: '360px', alignSelf: 'center', width: '100%' }}>
       {title && (
         <h3
           style={{
             fontFamily: UI_FONT,
-            fontSize: '0.65rem',
+            fontSize: '0.75rem',
             fontWeight: 400,
             letterSpacing: '0.08em',
             color: UIColors.highlight,
@@ -163,7 +163,8 @@ function Section({
           fontSize: '0.95rem',
           fontWeight: 400,
           color: UIColors.dim,
-          lineHeight: 1.7,
+          lineHeight: 1.8,
+          textAlign: 'justify',
         }}
       >
         {children}
