@@ -11,13 +11,19 @@ function getAudio(): HTMLAudioElement {
   return audio;
 }
 
+function isPlaying(): boolean {
+  return !!audio && !audio.paused;
+}
+
 export function startBackgroundMusic(): void {
   if (!getSettings().soundEnabled) return;
+  if (isPlaying()) return;
   getAudio().play().catch(() => {});
 }
 
 export function resumeBackgroundMusic(): void {
   if (!getSettings().soundEnabled) return;
+  if (isPlaying()) return;
   getAudio().play().catch(() => {});
 }
 
@@ -27,6 +33,7 @@ export function pauseBackgroundMusic(): void {
 
 export function syncBackgroundMusic(soundEnabled: boolean): void {
   if (soundEnabled) {
+    if (isPlaying()) return;
     getAudio().play().catch(() => {});
   } else {
     pauseBackgroundMusic();
